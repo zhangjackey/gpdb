@@ -106,6 +106,7 @@ groups:
   - check_centos
   - gptransfer_43x_to_master
   - gptransfer
+  - MM_gp_upgrade
 {% endif %}
 {% if "UD" in test_sections %}
   ## --------------------------------------------------------------------
@@ -252,6 +253,7 @@ groups:
   - compile_gpdb_centos6
   - gptransfer_43x_to_master
   - gptransfer
+  - MM_gp_upgrade
   - compile_gpdb_centos6
 
 {% endif %}
@@ -1857,6 +1859,20 @@ jobs:
     <<: *set_failed
 {% endfor %}
 
+- name: MM_gp_upgrade
+  plan:
+  - aggregate:
+    - get: gpdb_src
+      passed: [gate_mm_start]
+    - get: bin_gpdb
+      resource: bin_gpdb_centos6
+      passed: [gate_mm_start]
+      trigger: [[ test_trigger ]]
+    - get: centos-gpdb-dev-6
+  - task: MM_gp_upgrade
+    file: gpdb_src/concourse/tasks/gpMgmt_gp_upgrade.yml
+    image: centos-gpdb-dev-6
+
 - name: gptransfer_43x_to_master
   plan:
   - get: nightly-trigger
@@ -2177,4 +2193,5 @@ jobs:
     - gptransfer_43x_to_master
     - gptransfer
     - interconnect
+    - MM_gp_upgrade
 {% endif %}
