@@ -1277,6 +1277,10 @@ GetOldestXmin(bool allDbs, bool ignoreVacuum)
 	/*
 	 * In QD node, all distributed transactions have an entry in the proc array,
 	 * so we're done.
+	 *
+	 * During binary upgrade, we don't have distributed transactions, so we're
+	 * done there too. This ensures correct operation of VACUUM FREEZE during
+	 * pg_upgrade.
 	 */
 	if (Gp_role != GP_ROLE_DISPATCH)
 	{
