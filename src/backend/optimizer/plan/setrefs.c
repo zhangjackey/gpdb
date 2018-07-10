@@ -1088,6 +1088,8 @@ set_plan_refs(PlannerGlobal *glob, Plan *plan, int rtoffset)
 				pfree(childplan_itlist);
 			}
 			break;
+		case T_SplitUpdate:
+			break;
 		default:
 			elog(ERROR, "unrecognized node type: %d",
 				 (int) nodeTag(plan));

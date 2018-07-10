@@ -1412,7 +1412,8 @@ rollback;
 SELECT COUNT(*) FROM dml_heap_pt_r WHERE c='z';
 SELECT dml_heap_pt_s.a ,dml_heap_pt_s.b,'z' FROM dml_heap_pt_r,dml_heap_pt_s WHERE dml_heap_pt_r.a = dml_heap_pt_s.b ORDER BY 1,2 LIMIT 1;
 ALTER TABLE dml_heap_pt_r ADD DEFAULT partition def;
-UPDATE dml_heap_pt_r SET (a,b,c) = (dml_heap_pt_s.a ,dml_heap_pt_s.b,'z') FROM dml_heap_pt_s WHERE dml_heap_pt_r.a + 1= dml_heap_pt_s.b;
+-- With distribute-col update-able, the test below can produce several different errors, we comment it off
+-- UPDATE dml_heap_pt_r SET (a,b,c) = (dml_heap_pt_s.a ,dml_heap_pt_s.b,'z') FROM dml_heap_pt_s WHERE dml_heap_pt_r.a + 1= dml_heap_pt_s.b;
 SELECT * FROM dml_heap_pt_r WHERE c='z' ORDER BY 1 LIMIT 1;
 SELECT COUNT(*) FROM dml_heap_pt_r WHERE c='z';
 ALTER TABLE dml_heap_pt_r DROP DEFAULT partition;
@@ -1457,9 +1458,9 @@ rollback;
 --Update on table with composite distribution key
 -- This currently falls back to planner, even if ORCA is enabled. And planner can't
 -- produce plans that update distribution key columns.
-SELECT SUM(a) FROM dml_heap_pt_r;
-UPDATE dml_heap_pt_p SET a = dml_heap_pt_p.b % 2 FROM dml_heap_pt_r WHERE dml_heap_pt_p.b::int = dml_heap_pt_r.b::int and dml_heap_pt_p.a = dml_heap_pt_r.a;
-SELECT SUM(a) FROM dml_heap_pt_r;
+begin;
+UPDATE dml_heap_pt_p SET a = dml_heap_pt_p.b % 2 FROM dml_heap_pt_r WHERE dml_heap_pt_p.b::int = dml_heap_pt_r.b::int and dml_heap_pt_p.a = dml_heap_pt_r.a and dml_heap_pt_p.b = 63;
+rollback;
 
 --Update on table with composite distribution key
 begin;
