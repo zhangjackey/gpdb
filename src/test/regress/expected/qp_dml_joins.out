@@ -1,3 +1,9 @@
+-- start_matchsubs
+-- m/ERROR:  moving tuple from partition .* to partition .* not supported/
+-- s/ERROR:  moving tuple from partition .* to partition .* not supported/ERROR:  cross-partition or multi-update to a row/
+-- m/ERROR:  multiple updates to a row by the same query is not allowed/
+-- s/ERROR:  multiple updates to a row by the same query is not allowed/ERROR:  cross-partition or multi-update to a row/
+-- end_matchsubs
 -- First create a bunch of test tables
 SET statement_mem='250 MB';
 CREATE TABLE dml_ao_check_r (
@@ -2078,13 +2084,13 @@ SELECT SUM(d) FROM dml_heap_check_s;
 rollback;
 --Negative test: Update data that does not satisfy the check constraints
 UPDATE dml_heap_check_s SET a = 100 + dml_heap_check_s.a FROM dml_heap_check_r WHERE dml_heap_check_r.a = dml_heap_check_s.a AND dml_heap_check_s.a = 99;
-ERROR:  moving tuple from partition "dml_heap_check_s_1_prt_11" to partition "dml_heap_check_s_1_prt_def" not supported  (seg0 127.0.0.1:40000 pid=18972)
+ERROR:  cross-partition or multi-update to a row  (seg0 127.0.0.1:40000 pid=18972)
 --Negative test - Update violates check constraint(not NULL constraint)
 UPDATE dml_heap_check_s SET b = NULL FROM dml_heap_check_r WHERE dml_heap_check_r.a = dml_heap_check_s.b and dml_heap_check_s.b = 99;
 ERROR:  new row for relation "dml_heap_check_s_1_prt_5" violates check constraint "scheck_b"  (seg1 10.152.10.75:25433 pid=28939)
 --Negative test - Update moving tuple across partition .also violates the check constraint
 UPDATE dml_heap_check_s SET a = 110 + dml_heap_check_s.a FROM dml_heap_check_r WHERE dml_heap_check_r.a = dml_heap_check_s.a;
-ERROR:  moving tuple from partition "dml_heap_check_s_1_prt_2" to partition "dml_heap_check_s_1_prt_def" not supported  (seg0 127.0.0.1:40000 pid=18972)
+ERROR:  cross-partition or multi-update to a row  (seg0 127.0.0.1:40000 pid=18972)
 --Delete with generate_series
 begin;
 SELECT COUNT(*) FROM dml_heap_s;
@@ -3104,7 +3110,7 @@ SELECT SUM(b) FROM dml_heap_pt_r;
 
 ALTER TABLE dml_heap_pt_r ADD DEFAULT partition def;
 UPDATE dml_heap_pt_r SET a = DEFAULT, b = DEFAULT;
-ERROR:  moving tuple from partition "dml_heap_pt_r_1_prt_1" to partition "dml_heap_pt_r_1_prt_def" not supported  (seg1 10.152.10.75:25433 pid=28939)
+ERROR:  cross-partition or multi-update to a row  (seg1 10.152.10.75:25433 pid=28939)
 SELECT SUM(a) FROM dml_heap_pt_r;
 ERROR:  current transaction is aborted, commands ignored until end of transaction block
 SELECT SUM(b) FROM dml_heap_pt_r;
@@ -3257,7 +3263,7 @@ SELECT * FROM dml_heap_pt_r WHERE a = 1;
 
 ALTER TABLE dml_heap_pt_r ADD DEFAULT partition def;
 UPDATE dml_heap_pt_r SET a = dml_heap_pt_s.a + 10 ,b = NULL FROM dml_heap_pt_s WHERE dml_heap_pt_r.a + 2= dml_heap_pt_s.b;
-ERROR:  moving tuple from partition "dml_heap_pt_r_1_prt_1" to partition "dml_heap_pt_r_1_prt_def" not supported  (seg2 10.152.10.75:25434 pid=14697)
+ERROR:  cross-partition or multi-update to a row  (seg2 10.152.10.75:25434 pid=14697)
 SELECT * FROM dml_heap_pt_r WHERE a = 11 ORDER BY 1,2;
 ERROR:  current transaction is aborted, commands ignored until end of transaction block
 SELECT COUNT(*) FROM dml_heap_pt_r WHERE b is NULL;
@@ -3279,8 +3285,8 @@ SELECT dml_heap_pt_s.a ,dml_heap_pt_s.b,'z' FROM dml_heap_pt_r,dml_heap_pt_s WHE
 (1 row)
 
 ALTER TABLE dml_heap_pt_r ADD DEFAULT partition def;
--- With distribute-col update-able, the test below can produce several different errors, we comment it off
--- UPDATE dml_heap_pt_r SET (a,b,c) = (dml_heap_pt_s.a ,dml_heap_pt_s.b,'z') FROM dml_heap_pt_s WHERE dml_heap_pt_r.a + 1= dml_heap_pt_s.b;
+UPDATE dml_heap_pt_r SET (a,b,c) = (dml_heap_pt_s.a ,dml_heap_pt_s.b,'z') FROM dml_heap_pt_s WHERE dml_heap_pt_r.a + 1= dml_heap_pt_s.b;
+ERROR:  cross-partition or multi-update to a row  (seg2 10.152.10.75:25434 pid=14697)
 SELECT * FROM dml_heap_pt_r WHERE c='z' ORDER BY 1 LIMIT 1;
  a | b | c | d 
 ---+---+---+---
@@ -3380,7 +3386,7 @@ rollback;
 -- produce plans that update distribution key columns.
 begin;
 UPDATE dml_heap_pt_p SET a = dml_heap_pt_p.b % 2 FROM dml_heap_pt_r WHERE dml_heap_pt_p.b::int = dml_heap_pt_r.b::int and dml_heap_pt_p.a = dml_heap_pt_r.a and dml_heap_pt_p.b = 63;
-ERROR:  moving tuple from partition "dml_heap_pt_p_1_prt_def" to partition "dml_heap_pt_p_1_prt_one" not supported  (seg0 10.152.10.75:25432 pid=9661)
+ERROR:  cross-partition or multi-update to a row  (seg0 10.152.10.75:25432 pid=9661)
 rollback;
 --Update on table with composite distribution key
 begin;
@@ -3407,7 +3413,7 @@ SELECT SUM(a) FROM dml_heap_pt_s;
 (1 row)
 
 UPDATE dml_heap_pt_s SET a = dml_heap_pt_r.a + 30000 FROM dml_heap_pt_r WHERE dml_heap_pt_r.b = dml_heap_pt_s.b;
-ERROR:  moving tuple from partition "dml_heap_pt_s_1_prt_2" to partition "dml_heap_pt_s_1_prt_def" not supported  (seg0 127.0.0.1:40000 pid=18972)
+ERROR:  cross-partition or multi-update to a row  (seg0 127.0.0.1:40000 pid=18972)
 SELECT SUM(a) FROM dml_heap_pt_s;
 ERROR:  current transaction is aborted, commands ignored until end of transaction block
 rollback;
