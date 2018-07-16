@@ -243,6 +243,7 @@ typedef enum NodeTag
 	T_PartListRuleExpr,
 	T_PartListNullTestExpr,
 	T_TableOidInfo,
+    T_ReshuffleExpr,
 
 	/*
 	 * TAGS FOR EXPRESSION STATE NODES (execnodes.h)
@@ -285,6 +286,7 @@ typedef enum NodeTag
 	T_PartBoundOpenExprState,
 	T_PartListRuleExprState,
 	T_PartListNullTestExprState,
+    T_ReshuffleExprState,
 
 	/*
 	 * TAGS FOR PLANNER NODES (relation.h)
