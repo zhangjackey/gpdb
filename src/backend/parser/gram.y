@@ -640,7 +640,7 @@ static Node *makeIsNotDistinctFromNode(Node *expr, int position);
 
 	RANGE READ REAL REASSIGN RECHECK RECURSIVE REF REFERENCES REINDEX
 	RELATIVE_P RELEASE RENAME REPEATABLE REPLACE REPLICA
-	RESET RESTART RESTRICT RETURNING RETURNS REVOKE RIGHT ROLE ROLLBACK
+	RESET RESHUFFLE RESTART RESTRICT RETURNING RETURNS REVOKE RIGHT ROLE ROLLBACK
 	ROW ROWS RULE
 
 	SAVEPOINT SCHEMA SCROLL SEARCH SECOND_P SECURITY SELECT SEQUENCE SEQUENCES
@@ -948,6 +948,7 @@ static Node *makeIsNotDistinctFromNode(Node *expr, int position);
 			%nonassoc REPEATABLE
 			%nonassoc REPLACE
 			%nonassoc RESET
+			%nonassoc RESHUFFLE
 			%nonassoc RESOURCE
 			%nonassoc RESTART
 			%nonassoc RESTRICT
@@ -13306,6 +13307,12 @@ c_expr:		columnref								{ $$ = $1; }
 					r->location = @1;
 					$$ = (Node *)r;
 				}
+            | RESHUFFLE Iconst
+                {
+                    ReshuffleExpr *n = makeNode(ReshuffleExpr);
+                    n->newSegs = $2;
+                    $$ = (Node *)n;
+                }
 		;
 
 scatter_clause:
@@ -15605,6 +15612,7 @@ PartitionIdentKeyword: ABORT_P
 			| REPEATABLE
 			| REPLACE
 			| RESET
+			| RESHUFFLE
 			| RESOURCE
 			| RESTART
 			| RESTRICT
@@ -15888,6 +15896,7 @@ reserved_keyword:
 			| PRECEDING
 			| PRIMARY
 			| REFERENCES
+            | RESHUFFLE
 			| RETURNING
 			| SCATTER  /* gp */
 			| SELECT
