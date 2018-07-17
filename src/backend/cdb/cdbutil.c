@@ -116,6 +116,9 @@ getCdbComponentInfo(bool DNSLookupAsError)
 	HostSegsEntry *hsEntry;
 	HTAB	   *hostSegsHash = hostSegsHashTableInit();
 
+	int			primary_count = 0;
+	int			mirror_count = 0;
+
 	/*
 	 * Allocate component_databases return structure and
 	 * component_databases->segment_db_info array with an initial size of 128,
@@ -192,6 +195,18 @@ getCdbComponentInfo(bool DNSLookupAsError)
 		 */
 		if (content >= 0)
 		{
+			if (role == 'p' && DNSLookupAsError)
+			{
+				if (primary_count == getgpsegmentCount())
+					continue;
+				primary_count++;
+			}
+			if (role == 'm' && DNSLookupAsError)
+			{
+				if (mirror_count == getgpsegmentCount())
+					continue;
+				mirror_count++;
+			}
 			/*
 			 * if we have a dbid bigger than our array we'll have to grow the
 			 * array. (MPP-2104)
@@ -316,10 +331,6 @@ getCdbComponentInfo(bool DNSLookupAsError)
 	qsort(component_databases->entry_db_info,
 		  component_databases->total_entry_dbs, sizeof(CdbComponentDatabaseInfo),
 		  CdbComponentDatabaseInfoCompare);
-
-	if (DNSLookupAsError)
-		component_databases->total_segment_dbs = Min(component_databases->total_segment_dbs,
-													 getgpsegmentCount());
 
 	/*
 	 * Now count the number of distinct segindexes. Since it's sorted, this is

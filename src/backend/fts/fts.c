@@ -364,10 +364,17 @@ CdbComponentDatabases *readCdbComponentInfoAndUpdateStatus(MemoryContext probeCo
 	CdbComponentDatabases *cdbs = getCdbComponentInfo(false);
 	MemoryContextSwitchTo(save);
 
+	int primary = 0;
+	/*
+	 * cdbs->total_segment_dbs including the mirrors
+	 */
 	for (i=0; i < cdbs->total_segment_dbs; i++)
 	{
 		CdbComponentDatabaseInfo *segInfo = &cdbs->segment_db_info[i];
 		uint8	segStatus = 0;
+
+		if (segInfo->role == 'p')
+			primary++;
 
 		if (SEGMENT_IS_ALIVE(segInfo) || SEGMENT_IS_EXPAND(segInfo))
 			FTS_STATUS_SET_UP(segStatus);
@@ -375,8 +382,8 @@ CdbComponentDatabases *readCdbComponentInfoAndUpdateStatus(MemoryContext probeCo
 		ftsProbeInfo->fts_status[segInfo->dbid] = segStatus;
 	}
 
-	ftsProbeInfo->total_segment_dbs = cdbs->total_segment_dbs;
-	GpIdentity.numsegments = ftsProbeInfo->total_segment_dbs;
+	ftsProbeInfo->total_segment_dbs = primary;
+	GpIdentity.numsegments = primary;
 
 	/*
 	 * Initialize fts_stausVersion after populating the config details in
