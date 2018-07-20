@@ -59,6 +59,9 @@
 #include "cdb/cdbsreh.h"
 #include "cdb/cdbvars.h"
 
+int gp_old_segments = 3;
+int gp_new_segments = 4;
+
 static Plan *create_subplan(PlannerInfo *root, Path *best_path);		/* CDB */
 static Plan *create_scan_plan(PlannerInfo *root, Path *best_path);
 static List *build_relation_tlist(RelOptInfo *rel);
@@ -6480,6 +6483,8 @@ make_modifytable(PlannerInfo *root,
 	node->action_col_idxes = NIL;
 	node->ctid_col_idxes = NIL;
 	node->oid_col_idxes = NIL;
+	node->oldSegs = 3;
+
 
 	adjust_modifytable_flow(root, node);
 
@@ -6776,19 +6781,26 @@ adjust_modifytable_flow(PlannerInfo *root, ModifyTable *node)
 					List	   *hashExpr;
 					Plan	*new_subplan;
 
+					((ModifyTable*)node)->oldSegs = gp_old_segments;
+					((ModifyTable*)node)->newSegs = gp_new_segments;
 					new_subplan = (Plan *) make_splitupdate(root, (ModifyTable *) node, subplan, rte, rti);
 					hashExpr = getExprListFromTargetList(new_subplan->targetlist,
 														 targetPolicy->nattrs,
 														 targetPolicy->attrs,
 														 false);
-					if (!repartitionPlan(new_subplan, false, false, hashExpr,
-										 targetPolicy->numsegments))
-						ereport(ERROR, (errcode(ERRCODE_GP_FEATURE_NOT_YET),
-										errmsg("Cannot parallelize that UPDATE yet")));
+//					if (!repartitionPlan(new_subplan, false, false, hashExpr,
+//										 targetPolicy->numsegments))
+//						ereport(ERROR, (errcode(ERRCODE_GP_FEATURE_NOT_YET),
+//										errmsg("Cannot parallelize that UPDATE yet")));
+                    extern void
+                    request_explicit_motion2(Plan *plan, Index resultRelationsIdx, List *rtable);
+					request_explicit_motion2(new_subplan, rti, root->glob->finalrtable);
 
 					lcp->data.ptr_value = new_subplan;
+
 					continue;
 				}
+
 				node->action_col_idxes = lappend_int(node->action_col_idxes, -1);
 				node->ctid_col_idxes = lappend_int(node->ctid_col_idxes, -1);
 				node->oid_col_idxes = lappend_int(node->oid_col_idxes, 0);
