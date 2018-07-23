@@ -3245,6 +3245,6 @@ gpdb::MakeGpPolicy
                int nattrs
        )
 {
-       return makeGpPolicy(mcxt, ptype, nattrs);
+       return makeGpPolicy(mcxt, ptype, getgpsegmentCount(), nattrs);
 }
 // EOF
