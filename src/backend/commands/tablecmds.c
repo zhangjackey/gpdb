@@ -13228,6 +13228,12 @@ ATExecSetDistributedBy(Relation rel, Node *node, AlterTableCmd *cmd)
 
 					queryDesc = NULL;
 
+					GpPolicy *newPolicy = GpPolicyCopy(GetMemoryChunkContext(rel), policy);
+					newPolicy->numsegments = getgpsegmentCount();
+
+					GpPolicyReplace(RelationGetRelid(rel), newPolicy);
+					rel->rd_cdbpolicy = GpPolicyCopy(GetMemoryChunkContext(rel), newPolicy);
+
 					/* Restore the old snapshot */
 					PopActiveSnapshot();
 
