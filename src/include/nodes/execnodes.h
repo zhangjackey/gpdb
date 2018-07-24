@@ -2979,4 +2979,9 @@ typedef struct PartitionSelectorState
 	ProjectionInfo *partTabProj;
 } PartitionSelectorState;
 
+typedef struct ReshuffleState
+{
+	PlanState ps;
+} ReshuffleState;
+
 #endif   /* EXECNODES_H */
