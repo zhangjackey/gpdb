@@ -1089,6 +1089,7 @@ set_plan_refs(PlannerGlobal *glob, Plan *plan, int rtoffset)
 			}
 			break;
 		case T_SplitUpdate:
+		case T_Reshuffle:
 			break;
 		default:
 			elog(ERROR, "unrecognized node type: %d",
