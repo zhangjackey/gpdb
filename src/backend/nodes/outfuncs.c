@@ -4578,6 +4578,8 @@ _outAlterTSDictionaryStmt(StringInfo str, const AlterTSDictionaryStmt *node)
 	WRITE_NODE_FIELD(options);
 }
 
+
+#ifndef COMPILING_BINARY_FUNCS
 static void
 _outReshuffleExpr(StringInfo str, ReshuffleExpr *node)
 {
@@ -4588,8 +4590,6 @@ _outReshuffleExpr(StringInfo str, ReshuffleExpr *node)
 	WRITE_NODE_FIELD(hashTypes);
 }
 
-
-#ifndef COMPILING_BINARY_FUNCS
 static void
 _outTupleDescNode(StringInfo str, const TupleDescNode *node)
 {
