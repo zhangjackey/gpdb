@@ -23,6 +23,7 @@ from time import sleep
 
 
 from gppylib.commands.gp import SegmentStart, GpStandbyStart, MasterStop
+from gppylib.commands import gp
 from gppylib.commands.unix import findCmdInPath, Scp
 from gppylib.operations.startSegments import MIRROR_MODE_MIRRORLESS
 from gppylib.operations.unix import ListRemoteFilesByPattern, CheckRemoteFile
@@ -1891,6 +1892,29 @@ def impl(context, file, dbname):
             dbname, host, port, query)
             Command(name='Running Remote command: %s' % psql_cmd, cmdStr=psql_cmd).run(validateAfter=True)
 
+@then('The user runs sql "{query}" in "{dbname}" on specified segment {host}:{port} in utility mode')
+@when('The user runs sql "{query}" in "{dbname}" on specified segment {host}:{port} in utility mode')
+@given('The user runs sql "{query}" in "{dbname}" on specified segment {host}:{port} in utility mode')
+def impl(context, query, dbname, host, port):
+    psql_cmd = "PGDATABASE=\'%s\' PGOPTIONS=\'-c gp_session_role=utility\' psql -h %s -p %s -c \"%s\"; " % (
+    dbname, host, port, query)
+    cmd = Command(name='Running Remote command: %s' % psql_cmd, cmdStr=psql_cmd)
+    cmd.run(validateAfter=True)
+    context.stdout_message = cmd.get_stdout()
+
+@then('table {table_name} exists in "{dbname}" on specified segment {host}:{port}')
+@when('table {table_name} exists in "{dbname}" on specified segment {host}:{port}')
+@given('table {table_name} exists in "{dbname}" on specified segment {host}:{port}')
+def impl(context, table_name, dbname, host, port):
+    query = "SELECT COUNT(*) FROM pg_class WHERE relname = '%s'" % table_name
+    psql_cmd = "PGDATABASE=\'%s\' PGOPTIONS=\'-c gp_session_role=utility\' psql -h %s -p %s -c \"%s\"; " % (
+    dbname, host, port, query)
+    cmd = Command(name='Running Remote command: %s' % psql_cmd, cmdStr=psql_cmd)
+    cmd.run(validateAfter=True)
+    keyword = "1 row"
+    if keyword not in cmd.get_stdout():
+        raise Exception(context.stdout_message)
+
 
 @then('The path "{path}" is removed from current working directory')
 @when('The path "{path}" is removed from current working directory')
@@ -2501,12 +2525,36 @@ sdw1:sdw1:21503:/tmp/gpexpand_behave/data/mirror/gpseg3:9:3:m"""
     gpexpand = Gpexpand(context, working_directory=context.working_directory, database='gptest')
     gpexpand.initialize_segments()
 
+@given('the master pid has been saved')
+def impl(context):
+    data_dir = os.path.join(context.working_directory,
+                            'data/master/gpseg-1')
+    context.master_pid = gp.get_postmaster_pid_locally(data_dir)
+
+@then('verify that the master pid has not been changed')
+def impl(context):
+    data_dir = os.path.join(context.working_directory,
+                            'data/master/gpseg-1')
+    current_master_pid = gp.get_postmaster_pid_locally(data_dir)
+    if context.master_pid == current_master_pid:
+        return
+
+    raise Exception("The master pid has been changed.\nprevious: %s\ncurrent: %s" % (context.master_pid, current_master_pid))
+
 @given('the number of segments have been saved')
 def impl(context):
     dbname = 'gptest'
     with dbconn.connect(dbconn.DbURL(dbname=dbname)) as conn:
         query = """SELECT count(*) from gp_segment_configuration where -1 < content"""
         context.start_data_segments = dbconn.execSQLForSingleton(conn, query)
+
+@given('user has created {table_name} table')
+def impl(context, table_name):
+    dbname = 'gptest'
+    with dbconn.connect(dbconn.DbURL(dbname=dbname)) as conn:
+        query = """CREATE TABLE test(a INT)"""
+        dbconn.execSQL(conn, query)
+        conn.commit()
 
 @then('verify that the cluster has {num_of_segments} new segments')
 def impl(context, num_of_segments):

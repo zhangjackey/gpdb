@@ -11,6 +11,7 @@ Feature: expand the cluster by adding more segments
         And a temporary directory to expand into
         And the database is not running
         And a cluster is created with no mirrors on "mdw" and "sdw1"
+        And the master pid has been saved
         And database "gptest" exists
         And there are no gpexpand_inputfiles
         And the cluster is setup for an expansion on hosts "mdw,sdw1"
@@ -26,6 +27,7 @@ Feature: expand the cluster by adding more segments
         And verify that the cluster has 2 new segments
         When the user runs gpexpand to redistribute
         Then the tables were expanded in the specified order
+        And verify that the master pid has not been changed
 
     @gpexpand_no_mirrors
     @gpexpand_ranks
@@ -189,3 +191,28 @@ Feature: expand the cluster by adding more segments
         When the user runs gpexpand with the latest gpexpand_inputfile
         Then gpexpand should return a return code of 0
         And verify that the cluster has 14 new segments
+
+    @gpexpand_no_mirrors
+    @gpexpand_no_restart
+    @gpexpand_catalog_copied
+    Scenario: expand a cluster without restarting db and catalog has been copie
+        Given a working directory of the test as '/tmp/gpexpand_behave'
+        And the database is killed on hosts "mdw,sdw1"
+        And the user runs command "rm -rf /tmp/gpexpand_behave/*"
+        And a temporary directory to expand into
+        And the database is not running
+        And a cluster is created with no mirrors on "mdw" and "sdw1"
+        And the master pid has been saved
+        And database "gptest" exists
+        And there are no gpexpand_inputfiles
+        And the cluster is setup for an expansion on hosts "mdw,sdw1"
+        And the user runs gpexpand interview to add 2 new segment and 0 new host "ignored.host"
+        And the number of segments have been saved
+        And user has created test table
+        When the user runs gpexpand with the latest gpexpand_inputfile
+        Then gpexpand should return a return code of 0
+        And verify that the cluster has 2 new segments
+        And all the segments are running
+        And table "test" exists in "gptest" on specified segment sdw1:20502
+        And table "test" exists in "gptest" on specified segment sdw1:20503
+        And verify that the master pid has not been changed
