@@ -32,6 +32,7 @@ from test.behave_utils.utils import *
 from test.behave_utils.cluster_setup import TestCluster, reset_hosts
 from test.behave_utils.cluster_expand import Gpexpand
 from gppylib.commands.base import Command, REMOTE
+from gppylib import pgconf
 
 
 master_data_dir = os.environ.get('MASTER_DATA_DIRECTORY')
@@ -306,6 +307,8 @@ def impl(context, command, gphome):
 @then('the user runs command "{command}"')
 def impl(context, command):
     run_command(context, command)
+    if has_exception(context):
+        raise context.exception
 
 
 @when('the user runs async command "{command}"')
@@ -2411,7 +2414,10 @@ def impl(context, working_directory):
     context.working_directory = working_directory
 
 def _create_cluster(context, master_host, segment_host_list):
-    segment_host_list = segment_host_list.split(",")
+    if segment_host_list == "":
+        segment_host_list = []
+    else:
+        segment_host_list = segment_host_list.split(",")
     del os.environ['MASTER_DATA_DIRECTORY']
     os.environ['MASTER_DATA_DIRECTORY'] = os.path.join(context.working_directory,
                                                        'data/master/gpseg-1')
@@ -2552,7 +2558,7 @@ def impl(context):
 def impl(context, table_name):
     dbname = 'gptest'
     with dbconn.connect(dbconn.DbURL(dbname=dbname)) as conn:
-        query = """CREATE TABLE test(a INT)"""
+        query = """CREATE TABLE %s(a INT)""" % table_name
         dbconn.execSQL(conn, query)
         conn.commit()
 
@@ -2699,3 +2705,46 @@ def step_impl(context, options):
                     raise Exception("gpstate -m output missing expected mirror info, datadir %s port %d" %(datadir, port))
     else:
         raise Exception("no verification for gpstate option given")
+
+@when('check segment conf: postgresql.conf pg_hba.conf')
+@then('check segment conf: postgresql.conf pg_hba.conf')
+def step_impl(context):
+    query = "select dbid, port, hostname, datadir from gp_segment_configuration where content >= 0"
+    conn = dbconn.connect(dbconn.DbURL(dbname='postgres'))
+    segments = dbconn.execSQL(conn, query).fetchall()
+    for segment in segments:
+        dbid = "'%s'" % segment[0]
+        port = "'%s'" % segment[1]
+        hostname = segment[2]
+        datadir = segment[3]
+
+        ## check postgresql.conf
+        remote_postgresql_conf = "%s/%s" % (datadir, 'postgresql.conf')
+        local_conf_copy = os.path.join(os.getenv("MASTER_DATA_DIRECTORY"), "%s.%s" % ('postgresql.conf', hostname))
+        cmd = Command(name="Copy remote conf to local to diff",
+                    cmdStr='scp %s:%s %s' % (hostname, remote_postgresql_conf, local_conf_copy))
+        cmd.run(validateAfter=True)
+
+        dic = pgconf.readfile(filename=local_conf_copy)
+        if str(dic['port']) != port:
+            raise Exception("port value in postgresql.conf of %s is incorrect. Expected:%s, given:%s" %
+                            (hostname, port, dic['port']))
+
+        ## check pg_hba.conf
+        remote_hba_conf = "%s/%s" % (datadir, 'pg_hba.conf')
+        local_hba_copy = os.path.join(os.getenv("MASTER_DATA_DIRECTORY"), "%s.%s" % ('pg_hba.conf', hostname))
+        cmd = Command(name="Copy remote conf to local to diff",
+                    cmdStr='scp %s:%s %s' % (hostname, remote_hba_conf, local_hba_copy))
+        cmd.run(validateAfter=True)
+
+        f = open(local_hba_copy, 'r')
+        hba_content = f.read()
+        f.close()
+
+        addrinfo = socket.getaddrinfo(hostname, None)
+        ipaddrlist = list(set([(ai[0], ai[4][0]) for ai in addrinfo]))
+        key_word = '# %s\n' % hostname
+        for addr in ipaddrlist:
+            key_word += 'host\tall\tall\t%s/%s\ttrust\n' % (addr[1], '32' if addr[0] == socket.AF_INET else '128')
+        if key_word not in hba_content:
+            raise Exception("Expected line not in pg_hba.conf,%s" % key_word)
