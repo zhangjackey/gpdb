@@ -1155,7 +1155,7 @@ repartitionPlanForGroupClauses(PlannerInfo *root, Plan *plan,
 
 	Assert(false);
 
-	return repartitionPlan(plan, stable, rescannable, hashExpr, gpgetsegmentCount());
+	return repartitionPlan(plan, stable, rescannable, hashExpr, getgpsegmentCount());
 }
 
 /*
