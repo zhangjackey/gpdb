@@ -587,7 +587,7 @@ ParallelizeCorrelatedSubPlanMutator(Node *node, ParallelizeCorrelatedPlanWalkerC
 		if (ctx->movement == MOVEMENT_BROADCAST)
 		{
 			broadcastPlan(scanPlan, false /* stable */ , false /* rescannable */,
-						  __GP_POLICY_EVIL_NUMSEGMENTS /* numsegments */);
+						  scanPlan->flow->numsegments /* numsegments */);
 		}
 		else
 		{
@@ -753,7 +753,7 @@ ParallelizeSubplan(SubPlan *spExpr, PlanProfile *context)
 		if (containingPlanDistributed)
 		{
 			broadcastPlan(newPlan, false /* stable */ , false /* rescannable */,
-						  __GP_POLICY_EVIL_NUMSEGMENTS /* numsegments */);
+						  context->currentPlanFlow->numsegments /* numsegments */);
 		}
 		else
 		{
