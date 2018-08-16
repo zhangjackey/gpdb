@@ -239,3 +239,29 @@ Feature: expand the cluster by adding more segments
         And all the segments are running
         And check segment conf: postgresql.conf pg_hba.conf
         And verify that the master pid has not been changed
+
+    @gpexpand_no_mirrors
+    @gpexpand_no_restart
+    @gpexpand_conf_copied
+    Scenario: expand a cluster without restarting db with long-run read-only transaction
+        Given a working directory of the test as '/tmp/gpexpand_behave'
+        And the database is killed on hosts "mdw,sdw1"
+        And the user runs command "rm -rf /tmp/gpexpand_behave/*"
+        And a temporary directory to expand into
+        And the database is not running
+        And a cluster is created with no mirrors on "mdw" and "sdw1"
+        And the master pid has been saved
+        And database "gptest" exists
+        And user has created test table
+        And 20 rows are inserted into table "test" in schema "public" with column type list "int"
+		And a long-run read-only transaction exists on "test"
+		And there are no gpexpand_inputfiles
+		And the cluster is setup for an expansion on hosts "mdw"
+		And the user runs gpexpand interview to add 1 new segment and 0 new host "ignore.host"
+		And the number of segments have been saved
+		When the user runs gpexpand with the latest gpexpand_inputfile
+		Then gpexpand should return a return code of 0
+		And verify that the cluster has 1 new segments
+		And all the segments are running
+		And verify that the master pid has not been changed
+		And verify that long-run read-only transaction still exists on "test"

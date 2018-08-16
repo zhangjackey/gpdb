@@ -2562,6 +2562,37 @@ def impl(context, table_name):
         dbconn.execSQL(conn, query)
         conn.commit()
 
+@given('a long-run read-only transaction exists on {table_name}')
+def impl(context, table_name):
+    dbname = 'gptest'
+    conn = dbconn.connect(dbconn.DbURL(dbname=dbname))
+    context.long_run_select_only_conn = conn
+
+    query = """SELECT gp_segment_id, * from %s order by 1, 2""" % table_name
+    data_result = dbconn.execSQL(conn, query).fetchall()
+    context.long_run_select_only_data_result = data_result
+
+    query = """SELECT txid_current()"""
+    xid = dbconn.execSQLForSingleton(conn, query)
+    context.long_run_select_only_xid = xid
+
+@then('verify that long-run read-only transaction still exists on {table_name}')
+def impl(context, table_name):
+    dbname = 'gptest'
+    conn = context.long_run_select_only_conn
+
+    query = """SELECT gp_segment_id, * from %s order by 1, 2""" % table_name
+    data_result = dbconn.execSQL(conn, query).fetchall()
+
+    query = """SELECT txid_current()"""
+    xid = dbconn.execSQLForSingleton(conn, query)
+
+    if (xid != context.long_run_select_only_xid or
+        data_result != context.long_run_select_only_data_result):
+        error_str = "Incorrect xid or select result of long run read-only transaction: \
+                xid(before %s, after %), result(before %s, after %s)"
+        raise Exception(error_str % (context.long_run_select_only_xid, xid, context.long_run_select_only_data_result, data_result))
+
 @then('verify that the cluster has {num_of_segments} new segments')
 def impl(context, num_of_segments):
     dbname = 'gptest'
