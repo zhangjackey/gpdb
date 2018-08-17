@@ -2593,6 +2593,37 @@ def impl(context, table_name):
                 xid(before %s, after %), result(before %s, after %s)"
         raise Exception(error_str % (context.long_run_select_only_xid, xid, context.long_run_select_only_data_result, data_result))
 
+@given('a long-run transaction starts')
+def impl(context):
+    dbname = 'gptest'
+    conn = dbconn.connect(dbconn.DbURL(dbname=dbname))
+    context.long_run_conn = conn
+
+    query = """SELECT txid_current()"""
+    xid = dbconn.execSQLForSingleton(conn, query)
+    context.long_run_xid = xid
+
+@then('verify that long-run transaction aborted for changing the catalog by creating table {table_name}')
+def impl(context, table_name):
+    dbname = 'gptest'
+    conn = context.long_run_conn
+
+    query = """SELECT txid_current()"""
+    xid = dbconn.execSQLForSingleton(conn, query)
+    if context.long_run_xid != xid:
+        raise Exception("Incorrect xid of long run transaction: before %s, after %s" %
+                        (context.long_run_xid, xid));
+
+    query = """CREATE TABLE %s (a INT)""" % table_name
+    try:
+        data_result = dbconn.execSQL(conn, query)
+    except Exception, msg:
+        key_msg = "ERROR:  cluster size is changed"
+        if key_msg not in msg.__str__():
+            raise Exception("transaction not abort correctly, errmsg:%s" % msg)
+    else:
+        raise Exception("transaction not abort, result:%s" % data_result)
+
 @then('verify that the cluster has {num_of_segments} new segments')
 def impl(context, num_of_segments):
     dbname = 'gptest'

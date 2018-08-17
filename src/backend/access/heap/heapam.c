@@ -159,14 +159,23 @@ protectOnlineExpand(Relation relation)
 			return;
 	}
 
+	/* The online expand util will hold this lwlock in LW_EXCLUSIVE mode.
+	 * Acquire expand lock in dontWait mode. If the lock is not available,
+	 * report error. Because online expand must be running, after that, the
+	 * cluster size has been changed, and the catalog data has been copied
+	 * to new segments, but this transaction gangs are still running on old
+	 * segments. Any catalog changes won't be copied to new segment.
+	 */
+	LockAcquireResult	acquireResult;
+	acquireResult = LockAcquire(&gp_expand_locktag, AccessShareLock, false, true);
+	if (acquireResult == LOCKACQUIRE_NOT_AVAIL)
+		elog(ERROR, "Expand has changed the cluster.");
+
 	/* FIXME: use a timestamp instead of size */
 	extern uint32 FtsGetTotalSegments(void);
 	if (GpIdentity.numsegments < FtsGetTotalSegments())
 		elog(ERROR, "cluster size is changed from %d to %d",
 			 GpIdentity.numsegments, FtsGetTotalSegments());
-
-	/* The online expand util will hold this lwlock in LW_EXCLUSIVE mode */
-	LockAcquire(&gp_expand_locktag, AccessShareLock, false, false);
 }
 
 /* ----------------------------------------------------------------
