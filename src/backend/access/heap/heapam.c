@@ -169,7 +169,7 @@ protectOnlineExpand(Relation relation)
 	LockAcquireResult	acquireResult;
 	acquireResult = LockAcquire(&gp_expand_locktag, AccessShareLock, false, true);
 	if (acquireResult == LOCKACQUIRE_NOT_AVAIL)
-		elog(ERROR, "Expand has changed the cluster.");
+		elog(ERROR, "gpexpand is holding the catalog lock, so you can't modify catalog.");
 
 	/* FIXME: use a timestamp instead of size */
 	extern uint32 FtsGetTotalSegments(void);
