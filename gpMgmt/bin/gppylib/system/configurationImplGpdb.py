@@ -128,6 +128,8 @@ class GpConfigurationProviderUsingGpdbCatalog(GpConfigurationProvider) :
 
         # reset dbId of new primary and mirror segments to -1
         # before invoking the operations which will assign them new ids
+        for seg in update.primary_to_add:
+            seg.setSegmentDbId(-1)
         for seg in update.mirror_to_add:
             seg.setSegmentDbId(-1)
 
@@ -271,7 +273,7 @@ class GpConfigurationProviderUsingGpdbCatalog(GpConfigurationProvider) :
 
     def __callSegmentAdd(self, conn, gpArray, seg):
         """
-        Call gp_add_segment_primary() to add the primary.
+        Call gp_add_segment() to add the primary.
         Return the new segment's dbid.
         """
         logger.debug('callSegmentAdd %s' % repr(seg))
