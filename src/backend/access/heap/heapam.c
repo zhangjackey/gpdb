@@ -134,6 +134,8 @@ gp_expand_unlock_catalog(PG_FUNCTION_ARGS)
 static inline void
 protectOnlineExpand(Relation relation)
 {
+	LockAcquireResult	acquired;
+
 	if (Gp_role != GP_ROLE_DISPATCH)
 		/* only lock catalog updates on qd */
 		return;
@@ -159,23 +161,29 @@ protectOnlineExpand(Relation relation)
 			return;
 	}
 
-	/* The online expand util will hold this lwlock in LW_EXCLUSIVE mode.
+	/*
+	 * The online expand util will hold this lwlock in LW_EXCLUSIVE mode.
 	 * Acquire expand lock in dontWait mode. If the lock is not available,
 	 * report error. Because online expand must be running, after that, the
 	 * cluster size has been changed, and the catalog data has been copied
 	 * to new segments, but this transaction gangs are still running on old
 	 * segments. Any catalog changes won't be copied to new segment.
 	 */
-	LockAcquireResult	acquireResult;
-	acquireResult = LockAcquire(&gp_expand_locktag, AccessShareLock, false, true);
-	if (acquireResult == LOCKACQUIRE_NOT_AVAIL)
-		elog(ERROR, "gpexpand is holding the catalog lock, so you can't modify catalog.");
+	/* FIXME: do not re-acquire the lock */
+	acquired = LockAcquire(&gp_expand_locktag, AccessShareLock, false, true);
+	if (acquired == LOCKACQUIRE_NOT_AVAIL)
+		ereport(ERROR,
+				(errcode(ERRCODE_INSUFFICIENT_PRIVILEGE),
+				 errmsg("gpexpand in progress, catalog changes are disallowed.")));
 
 	/* FIXME: use a timestamp instead of size */
 	extern uint32 FtsGetTotalSegments(void);
-	if (GpIdentity.numsegments < FtsGetTotalSegments())
-		elog(ERROR, "cluster size is changed from %d to %d",
-			 GpIdentity.numsegments, FtsGetTotalSegments());
+	if (getgpsegmentCount() != FtsGetTotalSegments())
+		ereport(ERROR,
+				(errcode(ERRCODE_INSUFFICIENT_PRIVILEGE),
+				 errmsg("cluster size is changed from %d to %d, "
+						"catalog changes are disallowed",
+						getgpsegmentCount(), FtsGetTotalSegments())));
 }
 
 /* ----------------------------------------------------------------
