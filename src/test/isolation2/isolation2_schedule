@@ -7,6 +7,10 @@ test: gdd/avoid-qd-deadlock
 test: pg_terminate_backend deadlock_under_entry_db_singleton pg_views_concurrent_drop alter_blocks_for_update_and_viceversa drop_rename reader_waits_for_lock resource_queue
 #test: pg_terminate_backend deadlock_under_entry_db_singleton starve_case pg_views_concurrent_drop alter_blocks_for_update_and_viceversa drop_rename reader_waits_for_lock resource_queue
 
+# below case will cause failures on catalog changes,
+# please keep it in a separate test group
+test: gpexpand_catalog_lock
+
 test: reindex
 test: reindex_gpfastsequence
 test: commit_transaction_block_checkpoint
