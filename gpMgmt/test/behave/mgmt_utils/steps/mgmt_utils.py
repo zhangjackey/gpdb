@@ -31,6 +31,7 @@ from test.behave_utils.gpfdist_utils.gpfdist_mgmt import Gpfdist
 from test.behave_utils.utils import *
 from test.behave_utils.cluster_setup import TestCluster, reset_hosts
 from test.behave_utils.cluster_expand import Gpexpand
+from test.behave_utils.gpexpand_dml import TestDML
 from gppylib.commands.base import Command, REMOTE
 from gppylib import pgconf
 
@@ -2840,3 +2841,31 @@ def step_impl(context):
             key_word += 'host\tall\tall\t%s/%s\ttrust\n' % (addr[1], '32' if addr[0] == socket.AF_INET else '128')
         if key_word not in hba_content:
             raise Exception("Expected line not in pg_hba.conf,%s" % key_word)
+
+@given('the transactions are started for dml')
+def impl(context):
+    dbname = 'gptest'
+    context.dml_jobs = []
+    for dml in ['insert', 'update', 'delete']:
+        job = TestDML.create(dbname, dml)
+        job.start()
+        context.dml_jobs.append((dml, job))
+
+@then('verify the dml results and commit')
+def impl(context):
+    dbname = 'gptest'
+
+    for dml, job in context.dml_jobs:
+        code, message = job.stop()
+        if not code:
+            raise Exception(message)
+
+@then('verify the dml results again in a new transaction')
+def impl(context):
+    dbname = 'gptest'
+    conn = dbconn.connect(dbconn.DbURL(dbname=dbname))
+
+    for dml, job in context.dml_jobs:
+        code, message = job.reverify(conn)
+        if not code:
+            raise Exception(message)
