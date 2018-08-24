@@ -356,6 +356,24 @@ ProcessConfigFile(GucContext context)
 			pfree(pre_value);
 	}
 
+	/* FIXME: how to check we are in a transaction or not? */
+	/* FIXME: how to let segments know the new size? */
+	/* TODO: how to support shrink in the future? */
+	if (MyProc && Gp_role == GP_ROLE_DISPATCH && MyProc->lxid == InvalidOid)
+	{
+		extern uint32 FtsGetTotalSegments(void);
+		extern void DisconnectAndDestroyAllGangs(bool resetSession);
+
+		uint32 newnumsegments = FtsGetTotalSegments();
+
+		if (newnumsegments > GpIdentity.numsegments)
+		{
+			DisconnectAndDestroyAllGangs(false);
+
+			GpIdentity.numsegments = newnumsegments;
+		}
+	}
+
 	/* Remember when we last successfully loaded the config file. */
 	PgReloadTime = GetCurrentTimestamp();
 

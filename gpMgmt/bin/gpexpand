@@ -1585,6 +1585,9 @@ Set PGDATABASE or use the -D option to specify the correct database to use.""" %
                 break
             time.sleep(1)
 
+        cmd = GpStop('Notify all backends about the new segments', reload=True)
+        cmd.run(validateAfter=False)
+
         self.statusLogger.set_status('UPDATE_CATALOG_DONE')
 
     # --------------------------------------------------------------------------

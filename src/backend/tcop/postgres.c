@@ -5165,6 +5165,10 @@ PostgresMain(int argc, char *argv[],
 			ProcessConfigFile(PGC_SIGHUP);
 		}
 
+		/*
+		 * Although we have reloaded numsegments in ProcessConfigFile() we
+		 * still need below logic as SIGHUP might not be received in time.
+		 */
 		/* FIXME: how to check we are in a transaction or not? */
 		/* FIXME: how to let segments know the new size? */
 		if (Gp_role == GP_ROLE_DISPATCH && MyProc->lxid == InvalidOid)
