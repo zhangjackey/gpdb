@@ -521,6 +521,7 @@ void FtsLoop()
 		{
 			got_SIGHUP = false;
 			ProcessConfigFile(PGC_SIGHUP);
+			updateGpIdentityNumsegments();
 		}
 
 		probe_start_time = time(NULL);
