@@ -1544,7 +1544,6 @@ set_append_path_locus(PlannerInfo *root, Path *pathnode, RelOptInfo *rel,
 					CdbPathLocus singleEntry;
 					CdbPathLocus_MakeEntry(&singleEntry, GP_POLICY_ENTRY_NUMSEGMENTS);
 
-					//FIXME:cdbpath_create_motion_path maybe need to refactor
 					subpath = cdbpath_create_motion_path(root, subpath, pathkeys, false, singleEntry);
 				}
 			}

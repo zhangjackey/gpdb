@@ -617,6 +617,7 @@ generate_nonunion_plan(SetOperationStmt *op, PlannerInfo *root,
 		 */
 		ListCell   *lc;
 		List	   *l = NIL;
+#if 0
         int         maxSegNum = -1;
 
 
@@ -638,6 +639,7 @@ generate_nonunion_plan(SetOperationStmt *op, PlannerInfo *root,
             maxSegNum = Max(maxSegNum, subplan->flow->numsegments);
             //l = lappend(l, make_motion_hash_all_targets(root, subplan));
         }
+#endif
 
 		foreach(lc, planlist)
 		{

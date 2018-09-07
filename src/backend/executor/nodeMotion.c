@@ -1453,10 +1453,6 @@ doSendTuple(Motion * motion, MotionState * node, TupleTableSlot *outerTupleSlot)
 
 		econtext->ecxt_outertuple = outerTupleSlot;
 
-#if 0
-		Assert(node->cdbhash->numsegs == motion->numOutputSegs);
-#endif
-		
 		hval = evalHashKey(econtext, node->hashExpr,
 				motion->hashDataTypes, node->cdbhash);
 

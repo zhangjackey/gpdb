@@ -127,11 +127,6 @@ cdbpath_create_motion_path(PlannerInfo *root,
 			subpath->locus.numsegments = numsegments;
 			return subpath;
 		}
-#if 0
-		/* entry-->entry or singleQE-->singleQE?  No motion needed. */
-		if (CdbPathLocus_IsEqual(subpath->locus, locus))
-			return subpath;
-#endif
 
 		/* entry-->singleQE?  Don't move.  Slice's QE will run on entry db. */
 		if (CdbPathLocus_IsEntry(subpath->locus))
@@ -155,9 +150,6 @@ cdbpath_create_motion_path(PlannerInfo *root,
 			pathnode->path.pathtype = T_Motion;
 			pathnode->path.parent = subpath->parent;
 			pathnode->path.locus = locus;
-#if 0
-			pathnode->path.locus.numsegments = 0;
-#endif
 			pathnode->path.rows = subpath->rows;
 			pathnode->path.pathkeys = pathkeys;
 			pathnode->subpath = subpath;
@@ -194,7 +186,6 @@ cdbpath_create_motion_path(PlannerInfo *root,
 			pathnode->path.pathkeys = pathkeys;
 			pathnode->subpath = subpath;
 
-			//Assert(locus.numsegments == numsegments);
 			Assert(pathnode->path.locus.numsegments > 0);
 
 			/* Costs, etc, are same as subpath. */
@@ -331,10 +322,6 @@ cdbpath_create_motion_path(PlannerInfo *root,
 			(CdbPathLocus_NumSegments(locus) >
 			 CdbPathLocus_NumSegments(subpath->locus)))
 		{
-#if 0
-			subpath->locus.numsegments = CdbPathLocus_NumSegments(locus);
-			return subpath;
-#endif
 			pathkeys = subpath->pathkeys;
 		}
 		else
@@ -760,7 +747,6 @@ cdbpath_partkeys_from_preds(PlannerInfo *root,
 	{
 		RestrictInfo *rinfo = (RestrictInfo *) lfirst(rcell);
 
-		//FIXME:
 		Assert(rinfo->left_ec != NULL);
 		Assert(rinfo->right_ec != NULL);
 
@@ -776,7 +762,6 @@ cdbpath_partkeys_from_preds(PlannerInfo *root,
 		}
 
 		/* Left & right pathkeys are usually the same... */
-		//FIXME
 		if (!b_partkey && rinfo->left_ec == rinfo->right_ec)
 		{
 			ListCell   *i;
@@ -811,7 +796,6 @@ cdbpath_partkeys_from_preds(PlannerInfo *root,
 				Assert(bms_is_subset(rinfo->left_relids, a_path->parent->relids));
 			}
 
-			//FIXME:IS IT USEFUL?
 			if (!b_ec)
 				b_ec = a_ec;
 
@@ -921,7 +905,7 @@ cdbpath_motion_for_join(PlannerInfo *root,
 	outer.has_wts = cdbpath_contains_wts(outer.path);
 	inner.has_wts = cdbpath_contains_wts(inner.path);
 
-	/* FIXME: nyu: special optimization for numsegments=1 */
+	/* FIXME: special optimization for numsegments=1 */
 
 	/* For now, inner path should not contain WorkTableScan */
 	Assert(!inner.has_wts);
@@ -1061,7 +1045,7 @@ cdbpath_motion_for_join(PlannerInfo *root,
 			 * table, we can not execute the plan correctly.
 			 */
 			Assert(CdbPathLocus_NumSegments(segGeneral->locus) <=
-						   CdbPathLocus_NumSegments(other->locus));
+				   CdbPathLocus_NumSegments(other->locus));
 
 			/*
 			 * FIXME: if "replicate table" in below comments means the
@@ -1109,9 +1093,9 @@ cdbpath_motion_for_join(PlannerInfo *root,
 		else if (CdbPathLocus_IsBottleneck(other->locus))
 		{
 			/*
- 			 * if the locus type is equal and segment count is unequal,
- 			 * we will dispatch the one on more segments to the other
- 			 */
+			 * if the locus type is equal and segment count is unequal,
+			 * we will dispatch the one on more segments to the other
+			 */
 			int numsegments = CdbPathLocus_CommonSegments(segGeneral->locus,
 														  other->locus);
 			segGeneral->move_to = other->locus;
@@ -1132,18 +1116,13 @@ cdbpath_motion_for_join(PlannerInfo *root,
 			 * is needed.
 			 *
 			 * A sql to reach here:
-			 *     select * from d1 a join r2 b using (c1);
-			 * where d1 is a replicated table on 1 segment,
-			 *       r2 is a random table on 2 segments.
+			 *     select * from d2 a join r1 b using (c1);
+			 * where d2 is a replicated table on 2 segment,
+			 *       r1 is a random table on 1 segments.
 			 */
 			if (CdbPathLocus_NumSegments(segGeneral->locus) >=
 				CdbPathLocus_NumSegments(other->locus))
 			{
-#if 0
-				segGeneral->locus.numsegments =
-					CdbPathLocus_NumSegments(other->locus);
-#endif
-
 				return other->locus;
 			}
 
@@ -1153,11 +1132,9 @@ cdbpath_motion_for_join(PlannerInfo *root,
 			 */
 
 			/*
-			 * For the case that other is a Hashed table and merge clause
-			 * matches other's distribute keys, we could redistribute
+			 * For the case that other is a Hashed table and redistribute
+			 * clause matches other's distribute keys, we could redistribute
 			 * segGeneral to other.
-			 *
-			 * FIXME: can we do this on r1 left join t1?
 			 */
 			if (CdbPathLocus_IsHashed(other->locus) &&
 				cdbpath_match_preds_to_partkey(root,
@@ -1172,9 +1149,6 @@ cdbpath_motion_for_join(PlannerInfo *root,
 
 				/* the result is distributed on the same segments with other */
 				segGeneral->move_to.numsegments = CdbPathLocus_NumSegments(other->locus);
-#if 0
-				return other->locus;
-#endif
 			}
 			/*
 			 * Otherwise gather both of them to a SingleQE, this is not usually
@@ -1300,7 +1274,7 @@ cdbpath_motion_for_join(PlannerInfo *root,
 			/*
 			 * the two results should all be distributed on the same segments,
 			 * here we make them the same with other->locus for safe
-			 * TODO: could we set them to any value such as getgpsegmentsCount()?
+			 * TODO: how about distribute them both to ALL segments?
 			 */
 			single->move_to.numsegments = CdbPathLocus_NumSegments(other->locus);
 			other->move_to.numsegments = CdbPathLocus_NumSegments(other->locus);
@@ -1387,10 +1361,10 @@ cdbpath_motion_for_join(PlannerInfo *root,
 											 &small->move_to))
 		{
 			/*
- 			 * the two results should all be distributed on the same segments,
- 			 * here we make them the same with common segments for safe
- 			 * TODO: could we set them to any value such as getgpsegmentsCount()?
- 			 */
+			 * the two results should all be distributed on the same segments,
+			 * here we make them the same with common segments for safe
+			 * TODO: how about distribute them both to ALL segments?
+			 */
 			int numsegments = CdbPathLocus_CommonSegments(large->locus,
 														  small->locus);
 			large->move_to.numsegments = numsegments;
@@ -1457,7 +1431,7 @@ cdbpath_motion_for_join(PlannerInfo *root,
 	return cdbpathlocus_join(outer.path->locus, inner.path->locus);
 
 fail:							/* can't do this join */
-	CdbPathLocus_MakeNull(&outer.move_to, 0); /* FIXME: IS 0 CORRECT? */
+	CdbPathLocus_MakeNull(&outer.move_to, 0);
 	return outer.move_to;
 }								/* cdbpath_motion_for_join */
 

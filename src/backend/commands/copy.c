@@ -1969,8 +1969,6 @@ CopyDispatchOnSegment(CopyState cstate, const CopyStmt *stmt)
 	}
 	else
 	{
-		//dispatchStmt->policy = createRandomPartitionedPolicy(NULL, __GP_POLICY_EVIL_NUMSEGMENTS);
-		/* FIXME: is this correct? */
 		/* FIXME: lock mode */
 		Oid			relid = RangeVarGetRelid(stmt->relation, NoLock, true);
 		GpPolicy   *relpolicy = GpPolicyFetch(NULL, relid);
@@ -6854,9 +6852,6 @@ InitDistributionData(CopyState cstate, Form_pg_attribute *attr,
 	CdbHash *cdbHash = NULL;
 	AttrNumber h_attnum; /* hash key attribute number */
 	int p_index;
-#if 0
-	int total_segs = getgpsegmentCount();
-#endif
 	int i = 0;
 
 	if (!multi_dist_policy)

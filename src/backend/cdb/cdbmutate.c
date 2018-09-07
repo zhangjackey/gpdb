@@ -954,11 +954,6 @@ add_slice_to_motion(Motion *motion,
 	}
 
 
-#if 0
-	Assert(motion->plan.lefttree != NULL);
-	Assert(motion->plan.lefttree->flow != NULL);
-#endif
-
 	/* Attach a descriptive Flow. */
 	switch (motion->motionType)
 	{

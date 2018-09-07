@@ -360,8 +360,6 @@ make_motion_gather(PlannerInfo *root, Plan *subplan, int segindex, List *sortPat
 	return motion;
 }
 
-
-
 /*
  * make_motion_hash_all_targets
  *		Add a Motion node atop the given subplan to hash collocate
@@ -393,7 +391,14 @@ make_motion_hash_all_targets(PlannerInfo *root, Plan *subplan)
 	}
 
 	if (hashexprs)
-		return make_motion_hash(root, subplan, hashexprs);
+		/*
+		 * FIXME: ALL as numsegments is correct,
+		 *        but can we decide a better value?
+		 */
+		return make_hashed_motion(subplan,
+								  hashexprs,
+								  false /* useExecutorVarFormat */,
+								  GP_POLICY_ALL_NUMSEGMENTS);
 	else
 	{
 		/*
