@@ -100,7 +100,12 @@ set_distribution_policy (Datum array_distribution)
 				errmsg("there is no distribution set in target table")));
 	}
 
-	policy = makeGpPolicy(NULL, POLICYTYPE_PARTITIONED, nattrs);
+	/*
+	 * FIXME_TABLE_EXPAND: set_distribution_policy function only used for checking
+	 * the distribution policy of the relation, we set the EVIL numbers for the
+	 * segment count simply, it need to be fixed in the future.
+	 */
+	policy = makeGpPolicy(NULL, POLICYTYPE_PARTITIONED, nattrs, __GP_POLICY_EVIL_NUMSEGMENTS);
 	
 	for (int i = 0; i < nattrs; i++)
 	{

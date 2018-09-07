@@ -1969,7 +1969,14 @@ CopyDispatchOnSegment(CopyState cstate, const CopyStmt *stmt)
 	}
 	else
 	{
-		dispatchStmt->policy = createRandomPartitionedPolicy(NULL);
+		//dispatchStmt->policy = createRandomPartitionedPolicy(NULL, __GP_POLICY_EVIL_NUMSEGMENTS);
+		/* FIXME: is this correct? */
+		/* FIXME: lock mode */
+		Oid			relid = RangeVarGetRelid(stmt->relation, NoLock, true);
+		GpPolicy   *relpolicy = GpPolicyFetch(NULL, relid);
+
+        dispatchStmt->policy = createRandomPartitionedPolicy(NULL,
+													 relpolicy->numsegments);
 	}
 
 	CdbDispatchUtilityStatement((Node *) dispatchStmt,
@@ -6888,7 +6895,8 @@ InitDistributionData(CopyState cstate, Form_pg_attribute *attr,
 		                      &hash_ctl,
 		                      HASH_ELEM | HASH_FUNCTION | HASH_CONTEXT);
 		p_nattrs = list_length(cols);
-		policy = createHashPartitionedPolicy(NULL, cols);
+		policy = createHashPartitionedPolicy(NULL, cols,
+											 cstate->rel->rd_cdbpolicy->numsegments);
 	}
 
 	/*
