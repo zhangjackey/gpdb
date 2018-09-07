@@ -557,7 +557,9 @@ subquery_planner(PlannerGlobal *glob, Query *parse,
 	if (Gp_role == GP_ROLE_DISPATCH && gp_session_id > -1)
 	{
 		/* Choose a segdb to which our singleton gangs should be dispatched. */
-		gp_singleton_segindex = gp_session_id % getgpsegmentCount();
+		//FIXME:
+		//gp_singleton_segindex = gp_session_id % getgpsegmentCount();
+		gp_singleton_segindex = 0;
 	}
 
 	root->hasRecursion = hasRecursion;
@@ -1033,6 +1035,8 @@ inheritance_planner(PlannerInfo *root)
 	List	   *returningLists = NIL;
 	List	   *rowMarks;
 	ListCell   *lc;
+	GpPolicy   *parentPolicy = NULL;
+	Oid			parentOid = InvalidOid;
 
 	/* MPP */
 	Plan	   *plan;
@@ -1064,6 +1068,17 @@ inheritance_planner(PlannerInfo *root)
 		/* append_rel_list contains all append rels; ignore others */
 		if (appinfo->parent_relid != parentRTindex)
 			continue;
+
+		if (!parentPolicy)
+		{
+			parentPolicy = GpPolicyFetch(NULL, appinfo->parent_reloid);
+			parentOid = appinfo->parent_reloid;
+
+			Assert(parentPolicy != NULL);
+			Assert(parentOid != InvalidOid);
+		}
+
+		Assert(parentOid == appinfo->parent_reloid);
 
 		/*
 		 * We need a working copy of the PlannerInfo so that we can control
@@ -1262,6 +1277,8 @@ inheritance_planner(PlannerInfo *root)
 									 subroot.parse->returningList);
 	}
 
+	Assert(parentPolicy != NULL);
+
 	/* Mark result as unordered (probably unnecessary) */
 	root->query_pathkeys = NIL;
 
@@ -1282,7 +1299,7 @@ inheritance_planner(PlannerInfo *root)
 									NULL);
 
 		if (Gp_role == GP_ROLE_DISPATCH)
-			mark_plan_general(plan);
+			mark_plan_general(plan, parentPolicy->numsegments);
 
 		return plan;
 	}
@@ -1446,7 +1463,7 @@ grouping_planner(PlannerInfo *root, double tuple_fraction)
 	gp_motion_cost_per_row :
 	2.0 * cpu_tuple_cost;
 
-	CdbPathLocus_MakeNull(&current_locus);
+	CdbPathLocus_MakeNull(&current_locus, 0);
 
 	/* Tweak caller-supplied tuple_fraction if have LIMIT/OFFSET */
 	if (parse->limitCount || parse->limitOffset)
@@ -2022,7 +2039,7 @@ grouping_planner(PlannerInfo *root, double tuple_fraction)
 
 				/* Hashed aggregation produces randomly-ordered results */
 				current_pathkeys = NIL;
-				CdbPathLocus_MakeNull(&current_locus);
+				CdbPathLocus_MakeNull(&current_locus, 0);
 			}
 			else if (!grpext && (parse->hasAggs || parse->groupClause))
 			{
@@ -2087,7 +2104,7 @@ grouping_planner(PlannerInfo *root, double tuple_fraction)
 												  0);
 				}
 
-				CdbPathLocus_MakeNull(&current_locus);
+				CdbPathLocus_MakeNull(&current_locus, 0);
 			}
 			else if (grpext && (parse->hasAggs || parse->groupClause))
 			{
@@ -2149,7 +2166,7 @@ grouping_planner(PlannerInfo *root, double tuple_fraction)
 														  parse->sortClause,
 														  result_plan->targetlist,
 														  true);
-					CdbPathLocus_MakeNull(&current_locus);
+					CdbPathLocus_MakeNull(&current_locus, 0);
 				}
 			}
 			else if (root->hasHavingQual)
@@ -2166,14 +2183,19 @@ grouping_planner(PlannerInfo *root, double tuple_fraction)
 				 * this routine to avoid having to generate the plan in the
 				 * first place.
 				 */
+				/* FIXME: is this correct? */
+				/* FIXME: should use rt_fetch(resultRelation, rtable) ? */
+				RangeTblEntry *rangeTblEntry = linitial(parse->rtable);
+				GpPolicy   *policy = GpPolicyFetch(NULL, rangeTblEntry->relid);
+
 				result_plan = (Plan *) make_result(root,
 												   tlist,
 												   parse->havingQual,
 												   NULL);
 				/* Result will be only one row anyway; no sort order */
 				current_pathkeys = NIL;
-				mark_plan_general(result_plan);
-				CdbPathLocus_MakeNull(&current_locus);
+				mark_plan_general(result_plan, policy->numsegments);
+				CdbPathLocus_MakeNull(&current_locus, 0);
 			}
 		}						/* end of non-minmax-aggregate case */
 
@@ -2317,7 +2339,8 @@ grouping_planner(PlannerInfo *root, double tuple_fraction)
 						 * Change current_locus based on the new distribution
 						 * pathkeys.
 						 */
-						CdbPathLocus_MakeHashed(&current_locus, partition_dist_keys);
+						CdbPathLocus_MakeHashed(&current_locus, partition_dist_keys,
+												CdbPathLocus_NumSegments(current_locus));
 						need_gather_for_partitioning = false;
 					}
 				}
@@ -2901,7 +2924,8 @@ grouping_planner(PlannerInfo *root, double tuple_fraction)
 		 * Repartition the subquery plan based on our distribution
 		 * requirements
 		 */
-		r = repartitionPlan(result_plan, false, false, exprList);
+		r = repartitionPlan(result_plan, false, false, exprList,
+							result_plan->flow->numsegments);
 		if (!r)
 		{
 			/*
