@@ -856,6 +856,7 @@ show_dispatch_info(Slice *slice, ExplainState *es, Plan *plan)
 			}
 #endif
 
+			/* FIXME: We have no idea what the correct segments is */
 			if (plan->lefttree && plan->lefttree->flow)
 				segments = plan->lefttree->flow->numsegments;
 			else
@@ -1226,25 +1227,6 @@ ExplainNode(PlanState *planstate, List *ancestors,
 						break;
 				}
 
-#if 0
-                /*FIXME_TABLE_EXPAND: adjust the numsegments is very difficult:) */
-                if (pMotion->motionType == MOTIONTYPE_FIXED &&
-                    strcmp(sname, "Broadcast Motion") != 0)
-                    motion_recv = 1;
-                else if (plan->flow)
-                    motion_recv = plan->flow->numsegments;
-                else
-                    motion_recv = -1;
-
-                if (motion_snd != 1)
-                {
-                    if (plan->lefttree && plan->lefttree->flow)
-                        motion_snd = plan->lefttree->flow->numsegments;
-                    else
-                        motion_snd = -1;
-                }
-
-#endif
 				pname = psprintf("%s %d:%d", sname, motion_snd, motion_recv);
 			}
 			break;

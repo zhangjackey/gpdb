@@ -17,7 +17,6 @@
 
 #include "nodes/pg_list.h"      /* List */
 #include "nodes/bitmapset.h"    /* Bitmapset */
-//#include "nodes/primnodes.h"
 
 struct Plan;                    /* defined in plannodes.h */
 struct RelOptInfo;              /* defined in relation.h */
@@ -196,7 +195,6 @@ typedef struct CdbPathLocus
         _locus->partkey_oj = NIL;                       \
     } while (0)
 
-//FIXME:set numsegments
 #define CdbPathLocus_MakeNull(plocus, numsegments_)                   \
             CdbPathLocus_MakeSimple((plocus), CdbLocusType_Null, (numsegments_))
 #define CdbPathLocus_MakeEntry(plocus, numsegments_)                  \
@@ -234,7 +232,9 @@ typedef struct CdbPathLocus
 
 typedef enum
 {
+	/* locus a and b are Equal if all their attributes are equal */
     CdbPathLocus_Comparison_Equal,
+	/* WeakEqual is similar with Equal, but numsegments is not compared */
     CdbPathLocus_Comparison_WeakEqual,
     CdbPathLocus_Comparison_Contains
 } CdbPathLocus_Comparison;

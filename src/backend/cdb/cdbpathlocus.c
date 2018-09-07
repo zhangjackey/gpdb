@@ -116,14 +116,22 @@ cdbpathlocus_compare(CdbPathLocus_Comparison op,
 
 	if (op != CdbPathLocus_Comparison_WeakEqual)
 	{
+		/*
+		 * op is Equal or Contains, unless a and b have the same numsegments
+		 * the result is always false.
+		 */
 		if (CdbPathLocus_NumSegments(a) !=
 			CdbPathLocus_NumSegments(b))
 			return false;
 	}
 	else
 	{
+		/*
+		 * op is WeakEqual, the only difference with Equal is that numsegments
+		 * should be ignored during comparison, simulate Equal by setting
+		 * both a & b's numsegments to -1.
+		 */
 		op = CdbPathLocus_Comparison_Equal;
-		/* FIXME: do not modify a & b */
 		a.numsegments = -1;
 		b.numsegments = -1;
 	}
@@ -349,7 +357,6 @@ cdbpathlocus_from_baserel(struct PlannerInfo *root,
  *
  * Returns a locus specifying hashed distribution on a list of exprs.
  */
-//FIXME:IS THE SEGMENT COUNT CORRECT IN FLOW?
 CdbPathLocus
 cdbpathlocus_from_exprs(struct PlannerInfo *root,
 						Flow *flow)
@@ -700,7 +707,10 @@ cdbpathlocus_join(CdbPathLocus a, CdbPathLocus b)
         return a;
     }
 
-	/* FIXME: what exactly is this function doing? */
+	/*
+	 * FIXME: should we adjust the returned numsegments like
+	 * Replicated above?
+	 */
 	if (CdbPathLocus_IsSegmentGeneral(a))
 		return b;
 	else if (CdbPathLocus_IsSegmentGeneral(b))

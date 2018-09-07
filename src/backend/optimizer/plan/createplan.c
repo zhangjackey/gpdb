@@ -6489,20 +6489,21 @@ adjust_modifytable_flow(PlannerInfo *root, ModifyTable *node)
 
 			if (numsegments >= 0)
 			{
+				/*
+				 * We require a table T's sub tables all have the same
+				 * numsegments with T
+				 */
 				Assert(numsegments == targetPolicy->numsegments);
 			}
 
 			numsegments = targetPolicy->numsegments;
-#if 0
-			if (targetPolicy->ptype == POLICYTYPE_ENTRY)
-				numsegments = GP_POLICY_ALL_NUMSEGMENTS;
-#endif
 
 			if (targetPolicyType == POLICYTYPE_PARTITIONED)
 			{
 				all_subplans_entry = false;
 				all_subplans_replicated = false;
 
+#if 0
 				/* FIXME: also do this for other targetPolicyType? */
 				/* FIXME: also do this for all the subplans */
 				if (subplan->flow->locustype == CdbLocusType_General)
@@ -6510,6 +6511,7 @@ adjust_modifytable_flow(PlannerInfo *root, ModifyTable *node)
 					Assert(subplan->flow->numsegments >= numsegments);
 					subplan->flow->numsegments = numsegments;
 				}
+#endif
 
 				if (gp_enable_fast_sri && IsA(subplan, Result))
 					sri_optimize_for_result(root, subplan, rte, &targetPolicy, &hashExpr);
@@ -6539,6 +6541,7 @@ adjust_modifytable_flow(PlannerInfo *root, ModifyTable *node)
 					 * Ask for motion to a single QE.  Later, apply_motion
 					 * will override that to bring it to the QD instead.
 					 */
+					/* FIXME: why make below assertion? */
 					Assert(subplan->flow->numsegments == numsegments);
 					if (!focusPlan(subplan, false, false))
 						ereport(ERROR, (errcode(ERRCODE_GP_FEATURE_NOT_YET),
@@ -6605,6 +6608,10 @@ adjust_modifytable_flow(PlannerInfo *root, ModifyTable *node)
 
 			if (numsegments >= 0)
 			{
+				/*
+				 * We require a table T's sub tables all have the same
+				 * numsegments with T
+				 */
 				Assert(numsegments == targetPolicy->numsegments);
 			}
 
