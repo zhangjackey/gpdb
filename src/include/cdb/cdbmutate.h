@@ -24,7 +24,8 @@
 extern Plan *apply_motion(struct PlannerInfo *root, Plan *plan, Query *query);
 
 extern Motion *make_union_motion(Plan *lefttree,
-		                                int destSegIndex, bool useExecutorVarFormat);
+		                                int destSegIndex, bool useExecutorVarFormat,
+										int numsegments);
 extern Motion *make_sorted_union_motion(PlannerInfo *root,
 						 Plan *lefttree,
 						 int numSortCols, AttrNumber *sortColIdx,
@@ -32,9 +33,13 @@ extern Motion *make_sorted_union_motion(PlannerInfo *root,
 						 int destSegIndex,
 						 bool useExecutorVarFormat);
 extern Motion *make_hashed_motion(Plan *lefttree,
-				    List *hashExpr, bool useExecutorVarFormat);
+								  List *hashExpr,
+								  bool useExecutorVarFormat,
+								  int numsegments);
 
-extern Motion *make_broadcast_motion(Plan *lefttree, bool useExecutorVarFormat);
+extern Motion *make_broadcast_motion(Plan *lefttree,
+									 bool useExecutorVarFormat,
+									 int numsegments);
 
 extern Motion *make_explicit_motion(Plan *lefttree, AttrNumber segidColIdx, bool useExecutorVarFormat);
 
