@@ -823,7 +823,7 @@ elapsed_time(instr_time *starttime)
 }
 
 static void
-show_dispatch_info(Slice *slice, ExplainState *es)
+show_dispatch_info(Slice *slice, ExplainState *es, Plan *plan)
 {
 	int			segments;
 
@@ -844,6 +844,7 @@ show_dispatch_info(Slice *slice, ExplainState *es)
 		case GANGTYPE_PRIMARY_READER:
 		case GANGTYPE_SINGLETON_READER:
 		{
+#if 0
 			if (slice->directDispatch.isDirectDispatch)
 			{
 				Assert(list_length(slice->directDispatch.contentIds) == 1);
@@ -853,6 +854,13 @@ show_dispatch_info(Slice *slice, ExplainState *es)
 			{
 				segments = slice->numGangMembersToBeActive;
 			}
+#endif
+
+			if (plan->lefttree && plan->lefttree->flow)
+				segments = plan->lefttree->flow->numsegments;
+			else
+				segments = 0;
+
 			break;
 		}
 
@@ -1167,46 +1175,76 @@ ExplainNode(PlanState *planstate, List *ancestors,
 			{
 				Motion	   *pMotion = (Motion *) plan;
 
+				Assert(plan->lefttree);
+				Assert(plan->lefttree->flow);
+
+                /*FIXME_TABLE_EXPAND: add comment and clean code.*/
 				motion_snd = es->currentSlice->numGangMembersToBeActive;
 				motion_recv = 0;
 
 				/* scale the number of rows by the number of segments sending data */
 				scaleFactor = motion_snd;
 
+				if (plan->lefttree->flow->flotype == FLOW_SINGLETON)
+					motion_snd = 1;
+				else
+					motion_snd = plan->lefttree->flow->numsegments;
+
 				switch (pMotion->motionType)
 				{
 					case MOTIONTYPE_HASH:
 						sname = "Redistribute Motion";
-						motion_recv = pMotion->numOutputSegs;
+                        motion_recv = plan->flow->numsegments;
 						break;
 					case MOTIONTYPE_FIXED:
 						motion_recv = pMotion->numOutputSegs;
 						if (motion_recv == 0)
 						{
 							sname = "Broadcast Motion";
-							motion_recv = getgpsegmentCount();
+                            motion_recv = plan->flow->numsegments;
 						}
-						else if (plan->lefttree &&
-								 plan->lefttree->flow &&
-								 plan->lefttree->flow->locustype == CdbLocusType_Replicated)
+						else if (plan->lefttree->flow->locustype == CdbLocusType_Replicated)
 						{
 							sname = "Explicit Gather Motion";
 							scaleFactor = 1;
+                            motion_recv = 1;
 						}
 						else
 						{
 							sname = "Gather Motion";
 							scaleFactor = 1;
+                            motion_recv = 1;
 						}
+
 						break;
 					case MOTIONTYPE_EXPLICIT:
 						sname = "Explicit Redistribute Motion";
-						motion_recv = getgpsegmentCount();
+                        motion_recv = plan->flow->numsegments;
 						break;
 					default:
 						sname = "???";
 						break;
 				}
+
+#if 0
+                /*FIXME_TABLE_EXPAND: adjust the numsegments is very difficult:) */
+                if (pMotion->motionType == MOTIONTYPE_FIXED &&
+                    strcmp(sname, "Broadcast Motion") != 0)
+                    motion_recv = 1;
+                else if (plan->flow)
+                    motion_recv = plan->flow->numsegments;
+                else
+                    motion_recv = -1;
+
+                if (motion_snd != 1)
+                {
+                    if (plan->lefttree && plan->lefttree->flow)
+                        motion_snd = plan->lefttree->flow->numsegments;
+                    else
+                        motion_snd = -1;
+                }
+
+#endif
 				pname = psprintf("%s %d:%d", sname, motion_snd, motion_recv);
 			}
 			break;
@@ -1265,7 +1303,7 @@ ExplainNode(PlanState *planstate, List *ancestors,
 			 * *above* the Motion here. We will print the slice below the
 			 * Motion, below.
 			 */
-			show_dispatch_info(save_currentSlice, es);
+			show_dispatch_info(save_currentSlice, es, plan);
 			appendStringInfoChar(es->str, '\n');
 			es->indent++;
 		}
@@ -1284,7 +1322,7 @@ ExplainNode(PlanState *planstate, List *ancestors,
 		 * to the slice below the Motion.)
 		 */
 		if (IsA(plan, Motion))
-			show_dispatch_info(es->currentSlice, es);
+			show_dispatch_info(es->currentSlice, es, plan);
 
 		es->indent++;
 	}
@@ -1305,7 +1343,7 @@ ExplainNode(PlanState *planstate, List *ancestors,
 		if (plan_name)
 			ExplainPropertyText("Subplan Name", plan_name, es);
 
-		show_dispatch_info(es->currentSlice, es);
+		show_dispatch_info(es->currentSlice, es, plan);
 	}
 
 	switch (nodeTag(plan))
