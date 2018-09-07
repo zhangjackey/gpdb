@@ -3041,7 +3041,7 @@ cdbpathlocus_from_flow(Flow *flow)
 {
 	CdbPathLocus locus;
 
-	CdbPathLocus_MakeNull(&locus);
+	CdbPathLocus_MakeNull(&locus, flow->numsegments);
 
 	if (!flow)
 		return locus;
@@ -3050,15 +3050,15 @@ cdbpathlocus_from_flow(Flow *flow)
 	{
 		case FLOW_SINGLETON:
 			if (flow->segindex == -1)
-				CdbPathLocus_MakeEntry(&locus);
+				CdbPathLocus_MakeEntry(&locus, GP_POLICY_ENTRY_NUMSEGMENTS);
 			else
-				CdbPathLocus_MakeSingleQE(&locus);
+				CdbPathLocus_MakeSingleQE(&locus, flow->numsegments);
 			break;
 		case FLOW_REPLICATED:
-			CdbPathLocus_MakeReplicated(&locus);
+			CdbPathLocus_MakeReplicated(&locus, flow->numsegments);
 			break;
 		case FLOW_PARTITIONED:
-			CdbPathLocus_MakeStrewn(&locus);
+			CdbPathLocus_MakeStrewn(&locus, flow->numsegments);
 			break;
 		case FLOW_UNDEFINED:
 		default:
