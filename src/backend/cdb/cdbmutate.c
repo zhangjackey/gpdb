@@ -1856,7 +1856,8 @@ make_reshuffle(PlannerInfo *root,
 												 policy->attrs[i]);
 	}
 
-	mark_plan_strewn((Plan *) reshufflePlan);
+	/* FIXME: pass old or new cluster size to numsegments? */
+	mark_plan_strewn((Plan *) reshufflePlan, GP_POLICY_ALL_NUMSEGMENTS);
 
 	heap_close(rel, NoLock);
 
