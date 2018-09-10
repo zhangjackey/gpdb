@@ -2296,7 +2296,7 @@ _readSplitUpdate(void)
 /*
  * _readReshuffle
  */
-static SplitUpdate *
+static Reshuffle *
 _readReshuffle(void)
 {
 	READ_LOCALS(Reshuffle);

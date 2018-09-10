@@ -1224,7 +1224,7 @@ _outSplitUpdate(StringInfo str, const SplitUpdate *node)
  * _outReshuffle
  */
 static void
-_outReshuffle(StringInfo str, Reshuffle *node)
+_outReshuffle(StringInfo str, const Reshuffle *node)
 {
 	WRITE_NODE_TYPE("Reshuffle");
 
@@ -4570,8 +4570,9 @@ _outAlterTSDictionaryStmt(StringInfo str, const AlterTSDictionaryStmt *node)
 	WRITE_NODE_FIELD(options);
 }
 
+#ifndef COMPILING_BINARY_FUNCS
 static void
-_outReshuffleExpr(StringInfo str, ReshuffleExpr *node)
+_outReshuffleExpr(StringInfo str, const ReshuffleExpr *node)
 {
 	WRITE_NODE_TYPE("RESHUFFLEEXPR");
 
@@ -4581,7 +4582,6 @@ _outReshuffleExpr(StringInfo str, ReshuffleExpr *node)
 }
 
 
-#ifndef COMPILING_BINARY_FUNCS
 static void
 _outTupleDescNode(StringInfo str, const TupleDescNode *node)
 {

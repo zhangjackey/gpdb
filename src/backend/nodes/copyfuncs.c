@@ -4937,7 +4937,7 @@ _copyDistributedBy(const DistributedBy *from)
 
 
 static ReshuffleExpr *
-_copyReshuffleExpr(ReshuffleExpr *from)
+_copyReshuffleExpr(const ReshuffleExpr *from)
 {
 	ReshuffleExpr *newnode = makeNode(ReshuffleExpr);
 	newnode->newSegs = from->newSegs;
