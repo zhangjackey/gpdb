@@ -6503,7 +6503,11 @@ adjust_modifytable_flow(PlannerInfo *root, ModifyTable *node)
 				all_subplans_entry = false;
 				all_subplans_replicated = false;
 
-#if 0
+				/*
+				 * A query to reach here: INSERT INTO t1 VALUES(1).
+				 * There is no need to add a motion from General, we could
+				 * simply put General on the same segments with target table.
+				 */
 				/* FIXME: also do this for other targetPolicyType? */
 				/* FIXME: also do this for all the subplans */
 				if (subplan->flow->locustype == CdbLocusType_General)
@@ -6511,7 +6515,6 @@ adjust_modifytable_flow(PlannerInfo *root, ModifyTable *node)
 					Assert(subplan->flow->numsegments >= numsegments);
 					subplan->flow->numsegments = numsegments;
 				}
-#endif
 
 				if (gp_enable_fast_sri && IsA(subplan, Result))
 					sri_optimize_for_result(root, subplan, rte, &targetPolicy, &hashExpr);
