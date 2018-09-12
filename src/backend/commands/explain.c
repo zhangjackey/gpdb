@@ -856,11 +856,25 @@ show_dispatch_info(Slice *slice, ExplainState *es, Plan *plan)
 			}
 #endif
 
-			/* FIXME: We have no idea what the correct segments is */
+			/*
+			 * - for motion nodes we want to display the sender segments count,
+			 *   it can be fetched from lefttree;
+			 * - for non-motion nodes the segments count can be fetched from
+			 *   either lefttree or plan itself, they should be the same;
+			 * - there is also nodes like Hash that might have NULL plan->flow
+			 *   but non-NULL lefttree->flow, so we can use whichever that's
+			 *   available.
+			 */
 			if (plan->lefttree && plan->lefttree->flow)
+			{
 				segments = plan->lefttree->flow->numsegments;
+			}
 			else
-				segments = 0;
+			{
+				Assert(!IsA(plan, Motion));
+				Assert(plan->flow);
+				segments = plan->flow->numsegments;
+			}
 
 			break;
 		}
