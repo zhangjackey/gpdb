@@ -1914,7 +1914,12 @@ transformDistributedBy(CreateStmtContext *cxt,
 				}
 				else
 				{
+					/*
+					 * Inherited tables must have the same numsegments with
+					 * parent table.
+					 */
 					numsegments = oldTablePolicy->numsegments;
+
 					pfree(oldTablePolicy);
 					distributedBy = makeNode(DistributedBy);
 					distributedBy->ptype = POLICYTYPE_PARTITIONED;
@@ -1932,6 +1937,10 @@ transformDistributedBy(CreateStmtContext *cxt,
 			elog(NOTICE, "Table doesn't have 'DISTRIBUTED BY' clause, "
 				 "defaulting to distribution columns from LIKE table");
 
+		/*
+		 * Distribution policy is inherited from the LIKE table, do the same
+		 * to numsegments.
+		 */
 		numsegments = likeDistributedBy->numsegments;
 
 		if (likeDistributedBy->ptype == POLICYTYPE_PARTITIONED &&
@@ -1965,6 +1974,9 @@ transformDistributedBy(CreateStmtContext *cxt,
 				 errhint("Consider including the 'DISTRIBUTED BY' clause to determine the distribution of rows.")));
 		}
 		
+		/*
+		 * Create with default distribution policy and numsegments.
+		 */
 		numsegments = GP_POLICY_ALL_NUMSEGMENTS;
 
 		distributedBy = makeNode(DistributedBy);
@@ -2072,6 +2084,9 @@ transformDistributedBy(CreateStmtContext *cxt,
 			if (!bQuiet)
 				elog(NOTICE, "Table doesn't have 'DISTRIBUTED BY' clause, and no column type is suitable for a distribution key. Creating a NULL policy entry.");
 
+			/*
+			 * Create with default distribution policy and numsegments.
+			 */
 			numsegments = GP_POLICY_ALL_NUMSEGMENTS;
 
 			distributedBy = makeNode(DistributedBy);
@@ -2182,13 +2197,6 @@ transformDistributedBy(CreateStmtContext *cxt,
 		}
 	}
 
-	if (distributedBy)
-		numsegments = distributedBy->numsegments;
-	else if (likeDistributedBy)
-		numsegments = likeDistributedBy->numsegments;
-	else
-		numsegments = GP_POLICY_ALL_NUMSEGMENTS;
-
 	/*
 	 * Ok, we have decided on the distribution key columns now, and have the column
 	 * names in 'distrkeys'. Perform last cross-checks between UNIQUE and PRIMARY KEY
@@ -2250,6 +2258,18 @@ transformDistributedBy(CreateStmtContext *cxt,
 			}
 		}
 	}
+
+	/*
+	 * If DISTRIBUTED BY is specified use numsegments from it;
+	 * or if LIKE table is provided use numsegments from it;
+	 * otherwise distribute to ALL segments.
+	 */
+	if (distributedBy)
+		numsegments = distributedBy->numsegments;
+	else if (likeDistributedBy)
+		numsegments = likeDistributedBy->numsegments;
+	else
+		numsegments = GP_POLICY_ALL_NUMSEGMENTS;
 
 	/* Form the resulting Distributed By clause */
 	distributedBy = makeNode(DistributedBy);
