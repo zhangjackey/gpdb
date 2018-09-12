@@ -844,17 +844,11 @@ show_dispatch_info(Slice *slice, ExplainState *es, Plan *plan)
 		case GANGTYPE_PRIMARY_READER:
 		case GANGTYPE_SINGLETON_READER:
 		{
-#if 0
 			if (slice->directDispatch.isDirectDispatch)
 			{
 				Assert(list_length(slice->directDispatch.contentIds) == 1);
 				segments = list_length(slice->directDispatch.contentIds);
 			}
-			else
-			{
-				segments = slice->numGangMembersToBeActive;
-			}
-#endif
 
 			/*
 			 * - for motion nodes we want to display the sender segments count,
@@ -865,7 +859,7 @@ show_dispatch_info(Slice *slice, ExplainState *es, Plan *plan)
 			 *   but non-NULL lefttree->flow, so we can use whichever that's
 			 *   available.
 			 */
-			if (plan->lefttree && plan->lefttree->flow)
+			else if (plan->lefttree && plan->lefttree->flow)
 			{
 				segments = plan->lefttree->flow->numsegments;
 			}
@@ -1189,12 +1183,13 @@ ExplainNode(PlanState *planstate, List *ancestors,
 		case T_Motion:
 			{
 				Motion	   *pMotion = (Motion *) plan;
+				Slice	   *slice = es->currentSlice;
 
 				Assert(plan->lefttree);
 				Assert(plan->lefttree->flow);
 
-                /*FIXME_TABLE_EXPAND: add comment and clean code.*/
-				motion_snd = es->currentSlice->numGangMembersToBeActive;
+				/*FIXME_TABLE_EXPAND: add comment and clean code.*/
+				motion_snd = slice->numGangMembersToBeActive;
 				motion_recv = 0;
 
 				/* scale the number of rows by the number of segments sending data */
@@ -1209,36 +1204,43 @@ ExplainNode(PlanState *planstate, List *ancestors,
 				{
 					case MOTIONTYPE_HASH:
 						sname = "Redistribute Motion";
-                        motion_recv = plan->flow->numsegments;
+						motion_recv = plan->flow->numsegments;
 						break;
 					case MOTIONTYPE_FIXED:
 						motion_recv = pMotion->numOutputSegs;
 						if (motion_recv == 0)
 						{
 							sname = "Broadcast Motion";
-                            motion_recv = plan->flow->numsegments;
+							motion_recv = plan->flow->numsegments;
 						}
 						else if (plan->lefttree->flow->locustype == CdbLocusType_Replicated)
 						{
 							sname = "Explicit Gather Motion";
 							scaleFactor = 1;
-                            motion_recv = 1;
+							motion_recv = 1;
 						}
 						else
 						{
 							sname = "Gather Motion";
 							scaleFactor = 1;
-                            motion_recv = 1;
+							motion_recv = 1;
 						}
 
 						break;
 					case MOTIONTYPE_EXPLICIT:
 						sname = "Explicit Redistribute Motion";
-                        motion_recv = plan->flow->numsegments;
+						motion_recv = plan->flow->numsegments;
 						break;
 					default:
 						sname = "???";
 						break;
+				}
+
+				/* Special handling on direct dispatch */
+				if (slice->directDispatch.isDirectDispatch)
+				{
+					Assert(list_length(slice->directDispatch.contentIds) == 1);
+					motion_snd = list_length(slice->directDispatch.contentIds);
 				}
 
 				pname = psprintf("%s %d:%d", sname, motion_snd, motion_recv);
