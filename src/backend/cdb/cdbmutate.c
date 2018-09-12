@@ -275,6 +275,13 @@ apply_motion(PlannerInfo *root, Plan *plan, Query *query)
 				List	   *hashExpr;
 				ListCell   *exp1;
 
+				/*
+				 * In CTAS the source distribution policy is not inherited,
+				 * always set numsegments to ALL unless a DISTRIBUTED BY clause
+				 * is specified.
+				 */
+				numsegments = GP_POLICY_ALL_NUMSEGMENTS;
+
 				if (query->intoPolicy != NULL)
 				{
 					targetPolicy = query->intoPolicy;
@@ -285,7 +292,6 @@ apply_motion(PlannerInfo *root, Plan *plan, Query *query)
 				}
 				else if (gp_create_table_random_default_distribution)
 				{
-                    //FIXME_TABLE_EXPAND: keep the numsegments same as the src relation?
 					targetPolicy = createRandomPartitionedPolicy(NULL,
 																 numsegments);
 					ereport(NOTICE,
@@ -408,14 +414,8 @@ apply_motion(PlannerInfo *root, Plan *plan, Query *query)
 						}
 					}
 
-                    /*
-                     * FIXME_TABLE_EXPAND: change it to the flow segment count.
-                     */
-					//targetPolicy = createHashPartitionedPolicy(NULL, policykeys,
-					//										   numsegments);
-                    targetPolicy = createHashPartitionedPolicy(NULL,
-                                                               policykeys,
-                                                               plan->flow->numsegments);
+					targetPolicy = createHashPartitionedPolicy(NULL, policykeys,
+															   numsegments);
 
 					if (query->intoPolicy == NULL)
 					{
