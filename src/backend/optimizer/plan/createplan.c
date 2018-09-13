@@ -6632,10 +6632,15 @@ adjust_modifytable_flow(PlannerInfo *root, ModifyTable *node)
 				 * partitioning columns.
 				 */
 				if (node->operation == CMD_UPDATE &&
-					isAnyColChangedByUpdate(root, rti, rte,
+						/* with distributed keys*/
+						(targetPolicy->nattrs > 0 &&
+						 isAnyColChangedByUpdate(root, rti, rte,
 											subplan->targetlist,
 											targetPolicy->nattrs,
-											targetPolicy->attrs))
+											targetPolicy->attrs)) ||
+						/* for randomly table*/
+						(targetPolicy->nattrs == 0 &&
+						numsegments != getgpsegmentCount()))
 				{
 					List	   *hashExpr;
 					Plan	*new_subplan;

@@ -2689,8 +2689,8 @@ _equalXmlSerialize(const XmlSerialize *a, const XmlSerialize *b)
 static bool
 _equalReshuffleExpr(const ReshuffleExpr *a, const ReshuffleExpr *b)
 {
-	//COMPARE_SCALAR_FIELD(oldSegs);
 	COMPARE_SCALAR_FIELD(newSegs);
+	COMPARE_SCALAR_FIELD(oldSegs);
 	COMPARE_NODE_FIELD(hashKeys);
 	COMPARE_NODE_FIELD(hashTypes);
 

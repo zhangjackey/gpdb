@@ -4593,6 +4593,7 @@ _outReshuffleExpr(StringInfo str, const ReshuffleExpr *node)
 	WRITE_NODE_TYPE("RESHUFFLEEXPR");
 
 	WRITE_INT_FIELD(newSegs);
+	WRITE_INT_FIELD(oldSegs);
 	WRITE_NODE_FIELD(hashKeys);
 	WRITE_NODE_FIELD(hashTypes);
 }
