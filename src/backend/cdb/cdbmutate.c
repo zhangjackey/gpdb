@@ -1021,7 +1021,7 @@ make_union_motion(Plan *lefttree, int destSegIndex,
 						 0, NULL, NULL, NULL, NULL, /* no ordering */
 						 useExecutorVarFormat);
 	add_slice_to_motion(motion, MOTIONTYPE_FIXED, NULL, 1, outSegIdx,
-						GP_POLICY_GATHER_NUMSEGMENTS);
+						numsegments);
 	return motion;
 }
 
@@ -1034,15 +1034,31 @@ make_sorted_union_motion(PlannerInfo *root,
 						 bool useExecutorVarFormat)
 {
 	Motion	   *motion;
+	int			numsegments;
 	int		   *outSegIdx = (int *) palloc(sizeof(int));
 
 	outSegIdx[0] = destSegIndex;
+
+	/*
+	 * When Gather to QE the numsegments is used to determine the candidate
+	 * segments to put the SingleQE node on, so try to find out a proper
+	 * value for it.
+	 *
+	 * FIXME: but is GATHER a good value if we can't find the proper value?
+	 * in the case for inherited tables, a parent flow can be created before
+	 * sub flows, we might need to adjust the creation to pass numsegments
+	 * correctly.
+	 */
+	if (lefttree->flow)
+		numsegments = lefttree->flow->numsegments;
+	else
+		numsegments = GP_POLICY_GATHER_NUMSEGMENTS;
 
 	motion = make_motion(root, lefttree,
 						 numSortCols, sortColIdx, sortOperators, collations, nullsFirst,
 						 useExecutorVarFormat);
 	add_slice_to_motion(motion, MOTIONTYPE_FIXED, NULL, 1, outSegIdx,
-						GP_POLICY_GATHER_NUMSEGMENTS);
+						numsegments);
 	return motion;
 }
 
