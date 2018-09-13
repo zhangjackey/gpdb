@@ -861,13 +861,20 @@ show_dispatch_info(Slice *slice, ExplainState *es, Plan *plan)
 			 */
 			else if (plan->lefttree && plan->lefttree->flow)
 			{
-				segments = plan->lefttree->flow->numsegments;
+				if (plan->lefttree->flow->flotype == FLOW_SINGLETON)
+					segments = 1;
+				else
+					segments = plan->lefttree->flow->numsegments;
 			}
 			else
 			{
 				Assert(!IsA(plan, Motion));
 				Assert(plan->flow);
-				segments = plan->flow->numsegments;
+
+				if (plan->flow->flotype == FLOW_SINGLETON)
+					segments = 1;
+				else
+					segments = plan->flow->numsegments;
 			}
 
 			break;
