@@ -4941,6 +4941,7 @@ _copyReshuffleExpr(const ReshuffleExpr *from)
 {
 	ReshuffleExpr *newnode = makeNode(ReshuffleExpr);
 	newnode->newSegs = from->newSegs;
+	newnode->oldSegs = from->oldSegs;
 	COPY_NODE_FIELD(hashKeys);
 	COPY_NODE_FIELD(hashTypes);
 

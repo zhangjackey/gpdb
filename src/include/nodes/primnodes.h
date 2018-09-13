@@ -1586,6 +1586,7 @@ typedef struct ReshuffleExpr
 {
 	Expr xpr;
 	int newSegs;
+	int oldSegs;
 	List *hashKeys;
 	List *hashTypes;
 } ReshuffleExpr;

@@ -171,17 +171,32 @@ ExecReshuffle(ReshuffleState *node)
 
     if (DML_INSERT == dmlAction)
     {
-        values[reshuffle->tupleSegIdx - 1] =
-                Int32GetDatum(EvalHashSegID(values, nulls, reshuffle->policyAttrs, reshuffle->plan.targetlist, getgpsegmentCount()));
+        if (NULL != reshuffle->policyAttrs)
+        {
+            values[reshuffle->tupleSegIdx - 1] =
+                    Int32GetDatum(EvalHashSegID(values,
+                                                nulls,
+                                                reshuffle->policyAttrs,
+                                                reshuffle->plan.targetlist,
+                                                getgpsegmentCount()));
+        }
+        else
+		{
+			int newSegs = getgpsegmentCount();
+			int oldSegs = reshuffle->oldSegs;
+			values[reshuffle->tupleSegIdx - 1] = (random() % (newSegs - oldSegs)) + oldSegs;
+		}
     }
-    else
-    {
+    else {
 #ifdef USE_ASSERT_CHECKING
+		if (NULL != reshuffle->policyAttrs)
+		{
+			Datum oldSegID = values[reshuffle->tupleSegIdx - 1];
+			Datum newSegID = Int32GetDatum(
+					EvalHashSegID(values, nulls, reshuffle->policyAttrs, reshuffle->plan.targetlist, reshuffle->oldSegs));
 
-        Datum oldSegID = values[reshuffle->tupleSegIdx - 1];
-        Datum newSegID = Int32GetDatum(EvalHashSegID(values, nulls, reshuffle->policyAttrs, reshuffle->plan.targetlist, reshuffle->oldSegs));
-
-        Assert(oldSegID == newSegID);
+			Assert(oldSegID == newSegID);
+		}
 #endif /* USE_ASSERT_CHECKING */
     }
 

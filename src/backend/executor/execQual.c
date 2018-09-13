@@ -5196,30 +5196,35 @@ ExecEvalReshuffleExpr(ReshuffleExprState *astate,
 	ReshuffleExpr *sr = (ReshuffleExpr *) astate->xprstate.expr;
 	ListCell *k;
 	ListCell *t;
-	CdbHash *hnew = makeCdbHash(sr->newSegs);
+	CdbHash *hnew = NULL;
 	uint32 newSeg;
 	bool result;
 
-	cdbhashinit(hnew);
 
-	forboth(k, astate->hashKeys, t, astate->hashTypes)
+	if(NULL != sr->hashKeys)
 	{
-		if(*isNull)
-		{
-			cdbhashnull(hnew);
+		hnew = makeCdbHash(sr->newSegs);
+		cdbhashinit(hnew);
+		forboth(k, astate->hashKeys, t, astate->hashTypes) {
+			if (*isNull) {
+				cdbhashnull(hnew);
+			} else {
+				ExprState *vstate = (ExprState *) lfirst(k);
+				Oid tp = lfirst_oid(t);
+				Datum val = ExecEvalExpr(vstate, econtext, isNull, isDone);
+				cdbhash(hnew, val, tp);
+			}
 		}
-		else
-		{
-			ExprState *vstate = (ExprState*)lfirst(k);
-			Oid tp = lfirst_oid(t);
-			Datum val = ExecEvalExpr(vstate, econtext, isNull, isDone);
-			cdbhash(hnew, val, tp);
-		}
+
+		newSeg = cdbhashreduce(hnew);
+
+		result = (GpIdentity.segindex != newSeg);
 	}
-
-	newSeg = cdbhashreduce(hnew);
-
-	result = (GpIdentity.segindex != newSeg);
+	else
+	{
+		int newSegs = (float4)getgpsegmentCount();
+		result = ((random() % newSegs) >= sr->oldSegs);
+	}
 
 	return BoolGetDatum(result);
 
