@@ -3301,7 +3301,7 @@ NOTICE:  building index for child partition "sales_1_prt_5_2_prt_other_regions"
 explain select * from sales where date = '2011-01-01' and region = 'usa';
                                                              QUERY PLAN                                                              
 -------------------------------------------------------------------------------------------------------------------------------------
- Gather Motion 2:1  (slice1; segments: 2)  (cost=100.64..4773.83 rows=5 width=47)
+ Gather Motion 3:1  (slice1; segments: 3)  (cost=100.64..4773.83 rows=5 width=47)
    ->  Append  (cost=100.64..4773.83 rows=3 width=47)
          ->  Bitmap Heap Scan on sales_1_prt_outlying_dates_2_prt_usa sales  (cost=100.64..1524.49 rows=1 width=53)
                Recheck Cond: date = '01-01-2011'::date
