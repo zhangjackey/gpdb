@@ -1076,6 +1076,9 @@ contain_volatile_functions_walker(Node *node, void *context)
 		}
 		/* else fall through to check args */
 	}
+	else if (IsA(node, ReshuffleExpr))
+		return true;
+
 	return expression_tree_walker(node, contain_volatile_functions_walker,
 								  context);
 }

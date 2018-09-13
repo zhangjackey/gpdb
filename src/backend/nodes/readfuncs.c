@@ -2856,8 +2856,8 @@ _readReshuffleExpr(void)
 {
 	READ_LOCALS(ReshuffleExpr);
 
-	//READ_INT_FIELD(oldSegs);
 	READ_INT_FIELD(newSegs);
+	READ_INT_FIELD(oldSegs);
 	READ_NODE_FIELD(hashKeys);
 	READ_NODE_FIELD(hashTypes);
 

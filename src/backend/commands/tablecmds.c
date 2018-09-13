@@ -14047,8 +14047,12 @@ ATExecSetDistributedBy(Relation rel, Node *node, AlterTableCmd *cmd)
 					ReshuffleExpr *reshuffleExpr = makeNode(ReshuffleExpr);
 					GpPolicy *policy = rel->rd_cdbpolicy;
 					int			i;
-					
-					Assert(GpPolicyIsHashPartitioned(policy));
+
+					if(policy->numsegments == getgpsegmentCount())
+						ereport(ERROR,
+								(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
+										errmsg("same segments, useless")));
+					//Assert(GpPolicyIsHashPartitioned(policy));
 
 					stmt->targetList = NIL;
 	
@@ -14061,6 +14065,7 @@ ATExecSetDistributedBy(Relation rel, Node *node, AlterTableCmd *cmd)
 
 					/* make an reshuffle expression to filter some tuples */
 					reshuffleExpr->newSegs = getgpsegmentCount();
+					reshuffleExpr->oldSegs = policy->numsegments;
 					stmt->whereClause = (Node*)reshuffleExpr;
 
 					/* make an target list for the UpdateStmt */
