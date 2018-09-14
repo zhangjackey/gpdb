@@ -2857,6 +2857,7 @@ _readReshuffleExpr(void)
 	READ_INT_FIELD(oldSegs);
 	READ_NODE_FIELD(hashKeys);
 	READ_NODE_FIELD(hashTypes);
+	READ_INT_FIELD(ptype);
 
 	READ_DONE();
 }

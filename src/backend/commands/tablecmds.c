@@ -14208,6 +14208,7 @@ ATExecSetDistributedBy(Relation rel, Node *node, AlterTableCmd *cmd)
 					/* make an reshuffle expression to filter some tuples */
 					reshuffleExpr->newSegs = getgpsegmentCount();
 					reshuffleExpr->oldSegs = policy->numsegments;
+					reshuffleExpr->ptype = policy->ptype;
 					stmt->whereClause = (Node*)reshuffleExpr;
 
 					/* make an target list for the UpdateStmt */

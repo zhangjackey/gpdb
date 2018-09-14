@@ -1874,6 +1874,8 @@ make_reshuffle(PlannerInfo *root,
 												 policy->attrs[i]);
 	}
 
+	reshufflePlan->ptype = policy->ptype;
+
 	/* FIXME: pass old or new cluster size to numsegments? */
 	mark_plan_strewn((Plan *) reshufflePlan, GP_POLICY_ALL_NUMSEGMENTS);
 
