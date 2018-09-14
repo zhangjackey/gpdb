@@ -1247,7 +1247,7 @@ _outReshuffle(StringInfo str, const Reshuffle *node)
 	WRITE_INT_FIELD(tupleSegIdx);
 	WRITE_NODE_FIELD(policyAttrs);
 	WRITE_INT_FIELD(oldSegs);
-
+	WRITE_INT_FIELD(ptype);
 	_outPlanInfo(str, (Plan *) node);
 }
 
@@ -4596,6 +4596,7 @@ _outReshuffleExpr(StringInfo str, const ReshuffleExpr *node)
 	WRITE_INT_FIELD(oldSegs);
 	WRITE_NODE_FIELD(hashKeys);
 	WRITE_NODE_FIELD(hashTypes);
+	WRITE_INT_FIELD(ptype);
 }
 
 

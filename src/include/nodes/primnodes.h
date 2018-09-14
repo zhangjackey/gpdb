@@ -23,6 +23,7 @@
 #include "nodes/pg_list.h"
 #include "nodes/params.h"  /* For ParamListInfoData */
 #include "cdb/cdbpathlocus.h" /* For CdbLocusType */
+#include "catalog/gp_policy.h"
 
 
 /* ----------------------------------------------------------------
@@ -1578,6 +1579,7 @@ typedef struct ReshuffleExpr
 	int oldSegs;
 	List *hashKeys;
 	List *hashTypes;
+	GpPolicyType ptype;
 } ReshuffleExpr;
 
 

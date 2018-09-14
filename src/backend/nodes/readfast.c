@@ -2406,7 +2406,7 @@ _readReshuffle(void)
 	READ_INT_FIELD(tupleSegIdx);
 	READ_NODE_FIELD(policyAttrs);
 	READ_INT_FIELD(oldSegs);
-
+	READ_INT_FIELD(ptype);
 	readPlanInfo((Plan *)local_node);
 
 	READ_DONE();
@@ -3005,7 +3005,7 @@ _readReshuffleExprfFast(void)
 	READ_INT_FIELD(oldSegs);
 	READ_NODE_FIELD(hashKeys);
 	READ_NODE_FIELD(hashTypes);
-
+	READ_INT_FIELD(ptype);
 	READ_DONE();
 }
 

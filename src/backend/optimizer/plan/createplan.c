@@ -6716,6 +6716,24 @@ adjust_modifytable_flow(PlannerInfo *root, ModifyTable *node)
 			}
 			else if (targetPolicyType == POLICYTYPE_REPLICATED)
 			{
+				if (node->operation == CMD_UPDATE &&
+					numsegments != getgpsegmentCount())
+				{
+					List	   *hashExpr;
+					Plan	*new_subplan;
+
+					new_subplan = (Plan *) make_splitupdate(root, (ModifyTable *) node, subplan, rte, rti);
+
+					new_subplan = (Plan *) make_reshuffle(root, new_subplan, rte, rti);
+
+					extern void
+					request_explicit_motion2(Plan *plan, Index resultRelationsIdx, List *rtable);
+					request_explicit_motion2(new_subplan, rti, root->glob->finalrtable);
+
+					lcp->data.ptr_value = new_subplan;
+
+					continue;
+				}
 				node->action_col_idxes = lappend_int(node->action_col_idxes, -1);
 				node->ctid_col_idxes = lappend_int(node->ctid_col_idxes, -1);
 				node->oid_col_idxes = lappend_int(node->oid_col_idxes, 0);

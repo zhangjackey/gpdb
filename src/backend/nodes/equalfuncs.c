@@ -2693,7 +2693,7 @@ _equalReshuffleExpr(const ReshuffleExpr *a, const ReshuffleExpr *b)
 	COMPARE_SCALAR_FIELD(oldSegs);
 	COMPARE_NODE_FIELD(hashKeys);
 	COMPARE_NODE_FIELD(hashTypes);
-
+	COMPARE_SCALAR_FIELD(ptype);
 	return true;
 }
 

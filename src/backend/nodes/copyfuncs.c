@@ -1422,7 +1422,7 @@ _copyReshuffle(const Reshuffle *from)
 	COPY_SCALAR_FIELD(tupleSegIdx);
 	COPY_NODE_FIELD(policyAttrs);
 	COPY_SCALAR_FIELD(oldSegs);
-
+	COPY_SCALAR_FIELD(ptype);
 	return newnode;
 }
 
@@ -4922,7 +4922,7 @@ _copyReshuffleExpr(const ReshuffleExpr *from)
 	newnode->oldSegs = from->oldSegs;
 	COPY_NODE_FIELD(hashKeys);
 	COPY_NODE_FIELD(hashTypes);
-
+	newnode->ptype = from->ptype;
 	return newnode;
 }
 
