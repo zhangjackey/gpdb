@@ -849,34 +849,40 @@ show_dispatch_info(Slice *slice, ExplainState *es, Plan *plan)
 				Assert(list_length(slice->directDispatch.contentIds) == 1);
 				segments = list_length(slice->directDispatch.contentIds);
 			}
-
-			/*
-			 * - for motion nodes we want to display the sender segments count,
-			 *   it can be fetched from lefttree;
-			 * - for non-motion nodes the segments count can be fetched from
-			 *   either lefttree or plan itself, they should be the same;
-			 * - there is also nodes like Hash that might have NULL plan->flow
-			 *   but non-NULL lefttree->flow, so we can use whichever that's
-			 *   available.
-			 */
-			else if (plan->lefttree && plan->lefttree->flow)
+			else if (es->pstmt->planGen == PLANGEN_PLANNER)
 			{
-				if (plan->lefttree->flow->flotype == FLOW_SINGLETON)
-					segments = 1;
+				/*
+				 * - for motion nodes we want to display the sender segments
+				 *   count, it can be fetched from lefttree;
+				 * - for non-motion nodes the segments count can be fetched
+				 *   from either lefttree or plan itself, they should be the
+				 *   same;
+				 * - there is also nodes like Hash that might have NULL
+				 *   plan->flow but non-NULL lefttree->flow, so we can use
+				 *   whichever that's available.
+				 */
+				if (plan->lefttree && plan->lefttree->flow)
+				{
+					if (plan->lefttree->flow->flotype == FLOW_SINGLETON)
+						segments = 1;
+					else
+						segments = plan->lefttree->flow->numsegments;
+				}
 				else
-					segments = plan->lefttree->flow->numsegments;
+				{
+					Assert(!IsA(plan, Motion));
+					Assert(plan->flow);
+
+					if (plan->flow->flotype == FLOW_SINGLETON)
+						segments = 1;
+					else
+						segments = plan->flow->numsegments;
+				}
 			}
 			else
 			{
-				Assert(!IsA(plan, Motion));
-				Assert(plan->flow);
-
-				if (plan->flow->flotype == FLOW_SINGLETON)
-					segments = 1;
-				else
-					segments = plan->flow->numsegments;
+				segments = slice->numGangMembersToBeActive;
 			}
-
 			break;
 		}
 
@@ -1190,64 +1196,81 @@ ExplainNode(PlanState *planstate, List *ancestors,
 		case T_Motion:
 			{
 				Motion	   *pMotion = (Motion *) plan;
-				Slice	   *slice = es->currentSlice;
 
 				Assert(plan->lefttree);
 				Assert(plan->lefttree->flow);
 
-				/*FIXME_TABLE_EXPAND: add comment and clean code.*/
-				motion_snd = slice->numGangMembersToBeActive;
+				motion_snd = es->currentSlice->numGangMembersToBeActive;
 				motion_recv = 0;
 
 				/* scale the number of rows by the number of segments sending data */
 				scaleFactor = motion_snd;
 
-				if (plan->lefttree->flow->flotype == FLOW_SINGLETON)
-					motion_snd = 1;
-				else
-					motion_snd = plan->lefttree->flow->numsegments;
-
 				switch (pMotion->motionType)
 				{
 					case MOTIONTYPE_HASH:
 						sname = "Redistribute Motion";
-						motion_recv = plan->flow->numsegments;
+						motion_recv = pMotion->numOutputSegs;
 						break;
 					case MOTIONTYPE_FIXED:
 						motion_recv = pMotion->numOutputSegs;
 						if (motion_recv == 0)
 						{
 							sname = "Broadcast Motion";
-							motion_recv = plan->flow->numsegments;
+							motion_recv = getgpsegmentCount();
 						}
 						else if (plan->lefttree->flow->locustype == CdbLocusType_Replicated)
 						{
 							sname = "Explicit Gather Motion";
 							scaleFactor = 1;
-							motion_recv = 1;
 						}
 						else
 						{
 							sname = "Gather Motion";
 							scaleFactor = 1;
-							motion_recv = 1;
 						}
-
 						break;
 					case MOTIONTYPE_EXPLICIT:
 						sname = "Explicit Redistribute Motion";
-						motion_recv = plan->flow->numsegments;
+						motion_recv = getgpsegmentCount();
 						break;
 					default:
 						sname = "???";
 						break;
 				}
 
-				/* Special handling on direct dispatch */
-				if (slice->directDispatch.isDirectDispatch)
+				if (es->pstmt->planGen == PLANGEN_PLANNER)
 				{
-					Assert(list_length(slice->directDispatch.contentIds) == 1);
-					motion_snd = list_length(slice->directDispatch.contentIds);
+					Slice	   *slice = es->currentSlice;
+
+					if (slice->directDispatch.isDirectDispatch)
+					{
+						/* Special handling on direct dispatch */
+						Assert(list_length(slice->directDispatch.contentIds) == 1);
+						motion_snd = list_length(slice->directDispatch.contentIds);
+					}
+					else if (plan->lefttree->flow->flotype == FLOW_SINGLETON)
+					{
+						/* For SINGLETON we always display sender size as 1 */
+						motion_snd = 1;
+					}
+					else
+					{
+						/* Otherwise find out sender size from outer plan */
+						motion_snd = plan->lefttree->flow->numsegments;
+					}
+
+					if (pMotion->motionType == MOTIONTYPE_FIXED &&
+						pMotion->numOutputSegs != 0)
+					{
+						/* In Gather Motion always display receiver size as 1 */
+						motion_recv = 1;
+					}
+					else
+					{
+						/* Otherwise find out receiver size from plan */
+						motion_recv = plan->flow->numsegments;
+					}
 				}
 
 				pname = psprintf("%s %d:%d", sname, motion_snd, motion_recv);
