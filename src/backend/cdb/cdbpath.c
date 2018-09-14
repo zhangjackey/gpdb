@@ -923,10 +923,10 @@ cdbpath_motion_for_join(PlannerInfo    *root,
 
         /* If the bottlenecked rel can't be moved, bring the other rel to it. */
         if (single_immovable)
-		{
-			Assert(!other_immovable);
-			other->move_to = single->locus;
-		}
+	    {
+	        Assert(!other_immovable);
+	        other->move_to = single->locus;
+	    }
 
         /* Redistribute single rel if joining on other rel's partitioning key */
         else if (cdbpath_match_preds_to_partkey(root,
@@ -1036,9 +1036,9 @@ cdbpath_motion_for_join(PlannerInfo    *root,
 
         /* Redistribute both rels on equijoin cols. */
         else if (!small->require_existing_order &&
-				 !small->has_wts &&
+                 !small->has_wts &&
                  !large->require_existing_order &&
-				 !large->has_wts &&
+                 !large->has_wts &&
                  cdbpath_partkeys_from_preds(root,
                                              redistribution_clauses,
                                              large->path,
