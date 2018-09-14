@@ -2982,8 +2982,9 @@ typedef struct PartitionSelectorState
 typedef struct ReshuffleState
 {
 	PlanState ps;
-	int prevSegIdx;
-	TupleTableSlot *slot;
+	List* destList;
+	int newTargetIdx;
+	TupleTableSlot *savedSlot;
 } ReshuffleState;
 
 #endif   /* EXECNODES_H */
