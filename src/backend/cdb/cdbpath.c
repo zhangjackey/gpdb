@@ -57,6 +57,7 @@ cdbpath_cost_motion(PlannerInfo *root, CdbMotionPath *motionpath)
 		! IsA(subpath, IndexPath) && 
 		! IsA(subpath, UniquePath) &&
 		CdbPathLocus_IsReplicated(motionpath->path.locus))
+		/* FIXME: should use other.numsegments instead of cdbpath_segments */
 		motionpath->path.rows = subpath->rows * root->config->cdbpath_segments;
 	else
 		motionpath->path.rows = subpath->rows;
@@ -116,8 +117,8 @@ cdbpath_create_motion_path(PlannerInfo *root,
 		if (CdbPathLocus_IsEntry(subpath->locus) &&
 			CdbPathLocus_IsEntry(locus))
 		{
-			subpath->locus.numsegments = 0;
-			Assert(subpath->locus.numsegments > 0);
+			/* FIXME: how to reach here? what's the proper value for numsegments? */
+			subpath->locus.numsegments = GP_POLICY_ENTRY_NUMSEGMENTS;
 			return subpath;
 		}
 		/* singleQE-->singleQE?  No motion needed. */
@@ -1286,7 +1287,8 @@ cdbpath_motion_for_join(PlannerInfo *root,
 
 		/* Replicate single rel if cheaper than redistributing both rels. */
 		else if (single->ok_to_replicate &&
-				 single->bytes * root->config->cdbpath_segments < single->bytes + other->bytes)
+				 (single->bytes * CdbPathLocus_NumSegments(other->locus) <
+				  single->bytes + other->bytes))
 			CdbPathLocus_MakeReplicated(&single->move_to, CdbPathLocus_NumSegments(other->locus));
 
 		/* Redistribute both rels on equijoin cols. */
@@ -1376,7 +1378,8 @@ cdbpath_motion_for_join(PlannerInfo *root,
 		/* Replicate smaller rel if cheaper than redistributing both rels. */
 		else if (!small->require_existing_order &&
 				 small->ok_to_replicate &&
-				 small->bytes * root->config->cdbpath_segments < large->bytes + small->bytes)
+				 (small->bytes * CdbPathLocus_NumSegments(large->locus) <
+				  small->bytes + large->bytes))
 			CdbPathLocus_MakeReplicated(&small->move_to, CdbPathLocus_NumSegments(large->locus));
 
 		/* Redistribute both rels on equijoin cols. */
