@@ -1014,12 +1014,25 @@ ExecInitMotion(Motion * node, EState *estate, int eflags)
 		/*
 		 * Create hash API reference
 		 */
-		/* FIXME: how to decide the proper numsegments? */
-		if (node->plan.flow &&
-			node->plan.flow->numsegments > 0)
+		if (estate->es_plannedstmt->planGen == PLANGEN_PLANNER)
+		{
+			Assert(node->plan.flow);
+			Assert(node->plan.flow->numsegments > 0);
+
+			/*
+			 * For planner generated plan the size of receiver slice can be
+			 * determined from flow.
+			 */
 			motionstate->cdbhash = makeCdbHash(node->plan.flow->numsegments);
+		}
 		else
-			motionstate->cdbhash = makeCdbHash(__GP_POLICY_EVIL_NUMSEGMENTS);
+		{
+			/*
+			 * For ORCA generated plan we could distribute to ALL as partially
+			 * distributed tables are not supported by ORCA yet.
+			 */
+			motionstate->cdbhash = makeCdbHash(node->numOutputSegs);
+		}
     }
 
 	/* Merge Receive: Set up the key comparator and priority queue. */
