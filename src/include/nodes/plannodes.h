@@ -1341,6 +1341,7 @@ typedef struct Reshuffle
 	AttrNumber tupleSegIdx;
 	List *policyAttrs;
 	int oldSegs;
+	GpPolicyType ptype;
 } Reshuffle;
 
 /*

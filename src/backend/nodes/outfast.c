@@ -1354,6 +1354,7 @@ _outReshuffleExprFast(StringInfo str, ReshuffleExpr *node)
 	WRITE_INT_FIELD(oldSegs);
 	WRITE_NODE_FIELD(hashKeys);
 	WRITE_NODE_FIELD(hashTypes);
+	WRITE_INT_FIELD(ptype);
 }
 
 /*

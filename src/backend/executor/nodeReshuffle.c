@@ -154,54 +154,97 @@ ExecReshuffle(ReshuffleState *node)
     Assert(splitUpdate->actionColIdx > 0);
 
     /* Creates both TupleTableSlots. Returns DELETE TupleTableSlots.*/
-    slot = ExecProcNode(outerNode);
-
-    if (TupIsNull(slot))
+    if(node->prevSegIdx == -1)
     {
-        return NULL;
-    }
+get_insert_tuple:
+        slot = ExecProcNode(outerNode);
 
-    slot_getallattrs(slot);
-    values = slot_get_values(slot);
-    nulls = slot_get_isnull(slot);
+        if (TupIsNull(slot)) {
+            return NULL;
+        }
 
-    dmlAction = DatumGetInt32(values[splitUpdate->actionColIdx - 1]);
+        slot_getallattrs(slot);
+        values = slot_get_values(slot);
+        nulls = slot_get_isnull(slot);
 
-    Assert(dmlAction == DML_INSERT || dmlAction == DML_DELETE);
+        dmlAction = DatumGetInt32(values[splitUpdate->actionColIdx - 1]);
 
-    if (DML_INSERT == dmlAction)
-    {
-        if (NULL != reshuffle->policyAttrs)
-        {
-            values[reshuffle->tupleSegIdx - 1] =
-                    Int32GetDatum(EvalHashSegID(values,
-                                                nulls,
-                                                reshuffle->policyAttrs,
-                                                reshuffle->plan.targetlist,
-                                                getgpsegmentCount()));
+        Assert(dmlAction == DML_INSERT || dmlAction == DML_DELETE);
+
+        if (DML_INSERT == dmlAction) {
+            if (reshuffle->ptype == POLICYTYPE_PARTITIONED) {
+                if (NULL != reshuffle->policyAttrs) {
+                    values[reshuffle->tupleSegIdx - 1] =
+                            Int32GetDatum(EvalHashSegID(values,
+                                                        nulls,
+                                                        reshuffle->policyAttrs,
+                                                        reshuffle->plan.targetlist,
+                                                        getgpsegmentCount()));
+                } else {
+                    int newSegs = getgpsegmentCount();
+                    int oldSegs = reshuffle->oldSegs;
+                    values[reshuffle->tupleSegIdx - 1] = (random() % (newSegs - oldSegs)) + oldSegs;
+                }
+            } else if (reshuffle->ptype == POLICYTYPE_REPLICATED) {
+                /* ReshuffleExpr can guarantee it */
+                int segIdx = GpIdentity.segindex + reshuffle->oldSegs;
+                Assert(segIdx < getgpsegmentCount());
+
+                values[reshuffle->tupleSegIdx - 1] = segIdx;
+                if(segIdx + reshuffle->oldSegs < getgpsegmentCount())
+                {
+                    node->prevSegIdx = segIdx;
+                    node->slot = slot;
+                }
+            }
         }
         else
-		{
-			int newSegs = getgpsegmentCount();
-			int oldSegs = reshuffle->oldSegs;
-			values[reshuffle->tupleSegIdx - 1] = (random() % (newSegs - oldSegs)) + oldSegs;
-		}
-    }
-    else {
+        {
+            /* replicated table do not need to delete tuple*/
+            if (reshuffle->ptype == POLICYTYPE_REPLICATED) {
+                goto get_insert_tuple;
+            }
 #ifdef USE_ASSERT_CHECKING
-		if (NULL != reshuffle->policyAttrs)
-		{
-			Datum oldSegID = values[reshuffle->tupleSegIdx - 1];
-			Datum newSegID = Int32GetDatum(
-					EvalHashSegID(values, nulls, reshuffle->policyAttrs, reshuffle->plan.targetlist, reshuffle->oldSegs));
+            if (NULL != reshuffle->policyAttrs) {
+                Datum oldSegID = values[reshuffle->tupleSegIdx - 1];
+                Datum newSegID = Int32GetDatum(
+                        EvalHashSegID(values, nulls, reshuffle->policyAttrs, reshuffle->plan.targetlist,
+                                      reshuffle->oldSegs));
 
-			Assert(oldSegID == newSegID);
-		}
+                Assert(oldSegID == newSegID);
+            }
 #endif /* USE_ASSERT_CHECKING */
+        }
+
+        if (DatumGetInt32(values[reshuffle->tupleSegIdx - 1]) >= getgpsegmentCount())
+            elog(ERROR, "ERROR SEGMENT ID : %d", DatumGetInt32(values[reshuffle->tupleSegIdx - 1]));
+    } else
+    {
+        slot = node->slot;
+
+        slot_getallattrs(slot);
+        values = slot_get_values(slot);
+        nulls = slot_get_isnull(slot);
+
+        dmlAction = DatumGetInt32(values[splitUpdate->actionColIdx - 1]);
+
+        Assert(dmlAction == DML_INSERT);
+
+        int segIdx = node->prevSegIdx + reshuffle->oldSegs;
+        Assert(segIdx < getgpsegmentCount());
+
+        values[reshuffle->tupleSegIdx - 1] = segIdx;
+        if(segIdx + reshuffle->oldSegs < getgpsegmentCount())
+        {
+            node->prevSegIdx = segIdx;
+            node->slot = slot;
+        } else
+        {
+            node->prevSegIdx = -1;
+            node->slot = NULL;
+        }
     }
 
-    if (DatumGetInt32(values[reshuffle->tupleSegIdx - 1]) >= getgpsegmentCount())
-        elog(ERROR, "ERROR SEGMENT ID : %d", DatumGetInt32(values[reshuffle->tupleSegIdx - 1]));
 
 
 //    originalDelSegID = delete_values[plannode->tupleSegIdx - 1];
@@ -390,6 +433,8 @@ ExecInitReshuffle(Reshuffle *node, EState *estate, int eflags)
         SPI_ReserveMemory(((Plan *)node)->operatorMemKB * 1024L);
     }
 #endif
+
+    reshufflestate->prevSegIdx = -1;
 
     return reshufflestate;
 }
