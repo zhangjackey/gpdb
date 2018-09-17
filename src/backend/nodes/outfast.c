@@ -906,6 +906,7 @@ _outQuery(StringInfo str, Query *node)
 	WRITE_NODE_FIELD(setOperations);
 	WRITE_NODE_FIELD(constraintDeps);
 	WRITE_BOOL_FIELD(isCTAS);
+	WRITE_BOOL_FIELD(reshuffle);
 
 	/* Don't serialize policy */
 }

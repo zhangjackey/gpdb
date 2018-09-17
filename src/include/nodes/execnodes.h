@@ -2991,7 +2991,7 @@ typedef struct ReshuffleState
 {
 	PlanState ps;
 	int prevSegIdx;
-	TupleTableSlot *slot;
+	TupleTableSlot *prevSlot;
 } ReshuffleState;
 
 #endif   /* EXECNODES_H */

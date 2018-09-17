@@ -5168,6 +5168,7 @@ ExecEvalReshuffleExpr(ReshuffleExprState *astate,
 	{
 		if (NULL != sr->hashKeys)
 		{
+			/* For hash distributed tables */
 			hnew = makeCdbHash(sr->newSegs);
 			cdbhashinit(hnew);
 			forboth(k, astate->hashKeys, t, astate->hashTypes)
@@ -5191,21 +5192,27 @@ ExecEvalReshuffleExpr(ReshuffleExprState *astate,
 		}
 		else
 		{
-			int newSegs = (float4) getgpsegmentCount();
-			result = ((random() % newSegs) > sr->oldSegs);
+			/*
+			 * For random distributed tables
+			 *
+			 * We generate an random values [0, newSegs), when this
+			 * value is greater than oldSegs, it indicate that the
+			 * tuple need to reshuffle.
+			 */
+			int newSegs = getgpsegmentCount();
+			result = ((random() % newSegs) >= sr->oldSegs);
 		}
 	}
 	else if(sr->ptype == POLICYTYPE_REPLICATED)
 	{
 		/*
-		 * for replicated table:
+		 * For replicated tables:
 		 * if we have 3 old segments: 0 1 2
-		 * and we add 5 new segments: 3 4 5 6
+		 * and we add 4 new segments: 3 4 5 6
 		 * The seg#0 is responsible for reshuffling data into seg#3 and seg#6
 		 * The seg#1 is responsible for reshuffling data into seg#4
 		 * The seg#2 is responsible for reshuffling data into seg#5
-		 */
-		/*
+		 *
 		 * 1. New segments need not reshuffle data
 		 * 2. if we have 3 old segments and only add 1 new segments,
 		 * 	  then the seg#1 and seg#2 need not reshuffle data

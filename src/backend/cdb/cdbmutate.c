@@ -112,49 +112,50 @@ static bool replace_shareinput_targetlists_walker(Node *node, PlannerInfo *root,
 static bool fixup_subplan_walker(Node *node, SubPlanWalkerContext *context);
 static void find_junk_tle(List *targetList, const char *junkAttrName, TargetEntry **targetEntry);
 
-static void
-find_segid_attribute_check(List *targetList, AttrNumber *ctidAttr, Index resultRelationsIdx) {
-    TargetEntry *ctid;
-    Var *var;
-
-    find_junk_tle(targetList, "gp_segment_id", &ctid);
-
-    Assert(NULL != ctid);
-    Assert(IsA(ctid->expr, Var));
-
-    var = (Var *) (ctid->expr);
-
-    *ctidAttr = ctid->resno;
-}
-
-/*
- * Request an ExplicitRedistribute motion node for a plan node
- */
-extern void request_explicit_motion2(Plan *plan, Index resultRelationsIdx, List *rtable);
-void
-request_explicit_motion2(Plan *plan, Index resultRelationsIdx, List *rtable)
-{
-    /* request a segid redistribute motion */
-    /* create a shallow copy of the plan flow */
-    AttrNumber	segidColIdx;
-    Flow	   *flow = plan->flow;
-
-    plan->flow = (Flow *) palloc(sizeof(*(plan->flow)));
-    *(plan->flow) = *flow;
-
-    /* save original flow information */
-    plan->flow->flow_before_req_move = flow;
-
-    /* request a SegIdRedistribute motion node */
-    plan->flow->req_move = MOVEMENT_EXPLICIT;
-
-    /* find segid column in target list */
-    find_segid_attribute_check(plan->targetlist, &segidColIdx, resultRelationsIdx);
-
-    Assert(-1 != segidColIdx);
-
-    plan->flow->segidColIdx = segidColIdx;
-}
+//static void
+//find_segid_attribute_check(List *targetList, AttrNumber *ctidAttr, Index resultRelationsIdx) {
+//    TargetEntry *ctid;
+//    Var *var;
+//
+//    find_junk_tle(targetList, "gp_segment_id", &ctid);
+//
+//    Assert(NULL != ctid);
+//    Assert(IsA(ctid->expr, Var));
+//
+//    var = (Var *) (ctid->expr);
+//
+//    *ctidAttr = ctid->resno;
+//}
+//
+///*
+// * Request an ExplicitRedistribute motion node for a plan node
+// */
+//extern void request_explicit_motion2(Plan *plan, Index resultRelationsIdx, List *rtable);
+//void
+//request_explicit_motion2(Plan *plan, Index resultRelationsIdx, List *rtable)
+//{
+//    /* request a segid redistribute motion */
+//    /* create a shallow copy of the plan flow */
+//    AttrNumber	segidColIdx = -1;
+//    Flow	   *flow = plan->flow;
+//
+//    plan->flow = (Flow *) palloc(sizeof(*(plan->flow)));
+//    *(plan->flow) = *flow;
+//
+//    /* save original flow information */
+//    plan->flow->flow_before_req_move = flow;
+//
+//    /* request a SegIdRedistribute motion node */
+//    plan->flow->req_move = MOVEMENT_EXPLICIT;
+//
+//    /* find segid column in target list */
+//    //find_segid_attribute_check(plan->targetlist, &segidColIdx, resultRelationsIdx);
+//
+//	segidColIdx = find_segid_column(plan->targetlist, resultRelationsIdx);
+//    Assert(-1 != segidColIdx);
+//
+//    plan->flow->segidColIdx = segidColIdx;
+//}
 
 /*
  * Is target list of a Result node all-constant?
@@ -1544,9 +1545,7 @@ copy_junk_attributes(List *src, List **dest, AttrNumber startAttrIdx)
 
 		var = copyObject(((TargetEntry *) lfirst(lct))->expr);
 		var->varno = OUTER_VAR;
-		var->varnoold = OUTER_VAR;
 		var->varattno = ((TargetEntry *) lfirst(lct))->resno;
-		var->varoattno = ((TargetEntry *) lfirst(lct))->resno;
 
 		newTargetEntry = makeTargetEntry((Expr *) var, startAttrIdx + 1, ((TargetEntry *) lfirst(lct))->resname,
 										 true);
@@ -1817,9 +1816,6 @@ make_splitupdate(PlannerInfo *root, ModifyTable *mt, Plan *subplan, RangeTblEntr
 	splitupdate->plan.plan_rows = 2 * subplan->plan_rows;
 	splitupdate->plan.total_cost += (splitupdate->plan.plan_rows * cpu_tuple_cost);
 	splitupdate->plan.plan_width = subplan->plan_width;
-	//splitupdate->oldSegs = mt->oldSegs;
-	//splitupdate->newSegs = mt->newSegs;
-    //find_segid_attribute_check(splitupdate->plan.targetlist, &splitupdate->tupleSegIdx, resultRelationsIdx);
 
 	/* We need a motion node above the SplitUpdate, so mark it as strewn */
 	mark_plan_strewn((Plan *) splitupdate, subplan->flow->numsegments);
@@ -1852,10 +1848,9 @@ make_reshuffle(PlannerInfo *root,
 	reshufflePlan->plan.plan_rows = subplan->plan_rows;
 	reshufflePlan->plan.plan_width = subplan->plan_width;
 	reshufflePlan->oldSegs = policy->numsegments;
-	//splitupdate->newSegs = mt->newSegs;
-	find_segid_attribute_check(reshufflePlan->plan.targetlist,
-							   &reshufflePlan->tupleSegIdx,
-							   resultRelationsIdx);
+	reshufflePlan->tupleSegIdx =
+			find_segid_column(reshufflePlan->plan.targetlist,
+							  resultRelationsIdx);
 
 	for(i = 0; i < policy->nattrs; i++)
 	{

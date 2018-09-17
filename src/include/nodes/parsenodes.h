@@ -186,6 +186,14 @@ typedef struct Query
 	 * always be dispatched in parallel.
 	 */
 	bool		isCTAS;
+
+	/*
+	 *  Do we need to reshuffle data, we use an UpdateStmt
+	 *  to reshuffle table data, so we should to know if the
+	 *  UpdateStmt is used to reshuffle or to update.
+	 */
+	bool	   reshuffle;
+
 } Query;
 
 
@@ -1097,6 +1105,7 @@ typedef struct UpdateStmt
 	List	   *fromClause;		/* optional from clause for more tables */
 	List	   *returningList;	/* list of expressions to return */
 	WithClause *withClause;		/* WITH clause */
+	bool	    reshuffle;
 } UpdateStmt;
 
 /* ----------------------
