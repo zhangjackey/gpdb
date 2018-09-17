@@ -114,9 +114,10 @@ drop table t;
 -- should both distribute t2 to t1.
 
 --
--- x1 join y1
+-- JOIN
 --
 
+-- x1 join y1
 :explain select * from t1 a join t1 b using (c1);
 :explain select * from t1 a join t1 b using (c1, c2);
 :explain select * from t1 a join d1 b using (c1);
@@ -136,10 +137,7 @@ drop table t;
 :explain select * from r1 a join r1 b using (c1);
 :explain select * from r1 a join r1 b using (c1, c2);
 
---
 -- x1 join y2
---
-
 :explain select * from t1 a join t2 b using (c1);
 :explain select * from t1 a join t2 b using (c1, c2);
 :explain select * from t1 a join d2 b using (c1);
@@ -159,10 +157,7 @@ drop table t;
 :explain select * from r1 a join r2 b using (c1);
 :explain select * from r1 a join r2 b using (c1, c2);
 
---
 -- x2 join y1
---
-
 :explain select * from t2 a join t1 b using (c1);
 :explain select * from t2 a join t1 b using (c1, c2);
 :explain select * from t2 a join d1 b using (c1);
@@ -182,10 +177,7 @@ drop table t;
 :explain select * from r2 a join r1 b using (c1);
 :explain select * from r2 a join r1 b using (c1, c2);
 
---
 -- x2 join y2
---
-
 :explain select * from t2 a join t2 b using (c1);
 :explain select * from t2 a join t2 b using (c1, c2);
 :explain select * from t2 a join d2 b using (c1);
@@ -205,10 +197,7 @@ drop table t;
 :explain select * from r2 a join r2 b using (c1);
 :explain select * from r2 a join r2 b using (c1, c2);
 
---
 -- x1 left join y1
---
-
 :explain select * from t1 a left join t1 b using (c1);
 :explain select * from t1 a left join t1 b using (c1, c2);
 :explain select * from t1 a left join d1 b using (c1);
@@ -228,10 +217,7 @@ drop table t;
 :explain select * from r1 a left join r1 b using (c1);
 :explain select * from r1 a left join r1 b using (c1, c2);
 
---
 -- x1 left join y2
---
-
 :explain select * from t1 a left join t2 b using (c1);
 :explain select * from t1 a left join t2 b using (c1, c2);
 :explain select * from t1 a left join d2 b using (c1);
@@ -251,10 +237,7 @@ drop table t;
 :explain select * from r1 a left join r2 b using (c1);
 :explain select * from r1 a left join r2 b using (c1, c2);
 
---
 -- x2 left join y1
---
-
 :explain select * from t2 a left join t1 b using (c1);
 :explain select * from t2 a left join t1 b using (c1, c2);
 :explain select * from t2 a left join d1 b using (c1);
@@ -274,10 +257,7 @@ drop table t;
 :explain select * from r2 a left join r1 b using (c1);
 :explain select * from r2 a left join r1 b using (c1, c2);
 
---
 -- x2 left join y2
---
-
 :explain select * from t2 a left join t2 b using (c1);
 :explain select * from t2 a left join t2 b using (c1, c2);
 :explain select * from t2 a left join d2 b using (c1);

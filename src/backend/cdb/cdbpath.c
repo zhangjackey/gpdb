@@ -1364,6 +1364,15 @@ cdbpath_motion_for_join(PlannerInfo *root,
 				 small->bytes * CdbPathLocus_NumSegments(large->locus) < large->bytes)
 			CdbPathLocus_MakeReplicated(&small->move_to, CdbPathLocus_NumSegments(large->locus));
 
+		/*
+		 * Replicate larger rel if cheaper than redistributing small rel.
+		 * But don't replicate a rel that is to be preserved in outer join.
+		 */
+		else if (!large->require_existing_order &&
+				 large->ok_to_replicate &&
+				 large->bytes * CdbPathLocus_NumSegments(small->locus) < small->bytes)
+			CdbPathLocus_MakeReplicated(&large->move_to, CdbPathLocus_NumSegments(small->locus));
+
 		/* If joining on smaller rel's partitioning key, redistribute larger. */
 		else if (!large->require_existing_order &&
 				 cdbpath_match_preds_to_partkey(root,
@@ -1381,6 +1390,13 @@ cdbpath_motion_for_join(PlannerInfo *root,
 				 (small->bytes * CdbPathLocus_NumSegments(large->locus) <
 				  small->bytes + large->bytes))
 			CdbPathLocus_MakeReplicated(&small->move_to, CdbPathLocus_NumSegments(large->locus));
+
+		/* Replicate larger rel if cheaper than redistributing both rels. */
+		else if (!large->require_existing_order &&
+				 large->ok_to_replicate &&
+				 (large->bytes * CdbPathLocus_NumSegments(small->locus) <
+				  large->bytes + small->bytes))
+			CdbPathLocus_MakeReplicated(&large->move_to, CdbPathLocus_NumSegments(small->locus));
 
 		/* Redistribute both rels on equijoin cols. */
 		else if (!small->require_existing_order &&
