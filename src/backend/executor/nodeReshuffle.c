@@ -1,20 +1,20 @@
 /*-------------------------------------------------------------------------
  *
- * nodeResult.c
- *	  support for constant nodes needing special code.
+ * nodeReshuffle.c
+ *	  Support for reshuffling data in different segments size.
  *
  * DESCRIPTION
  *
- *		Result nodes are used in queries where no relations are scanned.
- *		Examples of such queries are:
+ *		When we add new segments into the cluster, the table
+ *		data need to reshuffle.
  *
- * Portions Copyright (c) 2005-2008, Greenplum inc.
+ * Portions Copyright (c) 2005-2018, Greenplum inc.
  * Portions Copyright (c) 2012-Present Pivotal Software, Inc.
  * Portions Copyright (c) 1996-2011, PostgreSQL Global Development Group
  * Portions Copyright (c) 1994, Regents of the University of California
  *
  * IDENTIFICATION
- *	  src/backend/executor/nodeResult.c
+ *	  src/backend/executor/nodeReshuffle.c
  *
  *-------------------------------------------------------------------------
  */
@@ -25,67 +25,15 @@
 #include "executor/nodeReshuffle.h"
 #include "utils/memutils.h"
 
-#include "catalog/pg_type.h"
-#include "utils/lsyscache.h"
-
 #include "cdb/cdbhash.h"
 #include "cdb/cdbvars.h"
 #include "cdb/memquota.h"
-#include "executor/spi.h"
 
-//static TupleTableSlot *NextInputSlot(ResultState *node);
-//static bool TupleMatchesHashFilter(Result *resultNode, TupleTableSlot *resultSlot);
-
-///**
-// * Returns the next valid input tuple from the left subtree
-// */
-//static TupleTableSlot *NextInputSlot(ResultState *node)
-//{
-//    Assert(outerPlanState(node));
-//
-//    TupleTableSlot *inputSlot = NULL;
-//
-//    while (!inputSlot)
-//    {
-//        PlanState  *outerPlan = outerPlanState(node);
-//
-//        TupleTableSlot *candidateInputSlot = ExecProcNode(outerPlan);
-//
-//        if (TupIsNull(candidateInputSlot))
-//        {
-//            /**
-//             * No more input tuples.
-//             */
-//            break;
-//        }
-//
-//        ExprContext *econtext = node->ps.ps_ExprContext;
-//
-//        /*
-//         * Reset per-tuple memory context to free any expression evaluation
-//         * storage allocated in the previous tuple cycle.  Note this can't happen
-//         * until we're done projecting out tuples from a scan tuple.
-//         */
-//        ResetExprContext(econtext);
-//
-//        econtext->ecxt_outertuple = candidateInputSlot;
-//
-//        /**
-//         * Extract out qual in case result node is also performing filtering.
-//         */
-//        List *qual = node->ps.qual;
-//        bool passesFilter = !qual || ExecQual(qual, econtext, false);
-//
-//        if (passesFilter)
-//        {
-//            inputSlot = candidateInputSlot;
-//        }
-//    }
-//
-//    return inputSlot;
-//
-//}
-
+/*
+ *  EvalHashSegID
+ *
+ * 	compute the Hash keys
+ */
 static int
 EvalHashSegID(Datum *values, bool *nulls, List *policyAttrs, List *targetlist, int nsegs)
 {
@@ -119,17 +67,49 @@ EvalHashSegID(Datum *values, bool *nulls, List *policyAttrs, List *targetlist, i
 
 }
 
+/*
+ * copyReshuffleSlot
+ *
+ * TargetList of Reshuffle Node and SplitUpdate Node is equal,
+ * We can copy the values directly.
+ */
+void
+copyReshuffleSlot(TupleTableSlot *slot, Datum *values, bool *nulls)
+{
+	TupleDesc desc = slot->tts_tupleDescriptor;
+	int i = 0;
+    Datum *temp_values = slot_get_values(slot);
+    bool *temp_nulls = slot_get_isnull(slot);
+
+	for(i = 0; i < desc->natts; i++)
+	{
+        temp_values[i] = values[i];
+        temp_nulls[i] = nulls[i];
+	}
+
+	return;
+}
+
 /* ----------------------------------------------------------------
- *		ExecResult(node)
+ *		ExecReshuffle(node)
  *
- *		returns the tuples from the outer plan which satisfy the
- *		qualification clause.  Since result nodes with right
- *		subtrees are never planned, we ignore the right subtree
- *		entirely (for now).. -cim 10/7/89
+ *  For hash distributed tables:
+ *  	we compute the destination segment with Hash methods and
+ *  	new segments count.
  *
- *		The qualification containing only constant clauses are
- *		checked first before any processing is done. It always returns
- *		'nil' if the constant qualification is not satisfied.
+ *  For random distributed tables:
+ *  	we get an random value [0, newSeg# - oldSeg#), then the
+ *  	destination segment is (random value + oldSeg#)
+ *
+ *  For replicated tables:
+ *  	if there are 3 old segments in the cluster and we add 4
+ *  	new segments:
+ *  	old segments: 0,1,2
+ *  	new segments: 3,4,5,6
+ *  	the seg#0 is responsible to copy data to seg#3 and seg#6
+ *  	the seg#1 is responsible to copy data to seg#4
+ *  	the seg#2 is responsible to copy data to seg#5
+ *
  * ----------------------------------------------------------------
  */
 TupleTableSlot *
@@ -169,27 +149,38 @@ ExecReshuffle(ReshuffleState *node)
 
         Assert(dmlAction == DML_INSERT || dmlAction == DML_DELETE);
 
-        if (DML_INSERT == dmlAction) {
-            if (NULL != reshuffle->policyAttrs) {
+        if (DML_INSERT == dmlAction)
+		{
+			/* For hash distributed tables*/
+            if (NULL != reshuffle->policyAttrs)
+			{
                 values[reshuffle->tupleSegIdx - 1] =
                         Int32GetDatum(EvalHashSegID(values,
                                                     nulls,
                                                     reshuffle->policyAttrs,
                                                     reshuffle->plan.targetlist,
                                                     getgpsegmentCount()));
-            } else {
+            }
+			else
+			{
+				/* For random distributed tables*/
                 int newSegs = getgpsegmentCount();
                 int oldSegs = reshuffle->oldSegs;
-                values[reshuffle->tupleSegIdx - 1] = (random() % (newSegs - oldSegs)) + oldSegs;
+                values[reshuffle->tupleSegIdx - 1] =
+                        Int32GetDatum((random() % (newSegs - oldSegs)) + oldSegs);
             }
         }
         else
         {
 #ifdef USE_ASSERT_CHECKING
-            if (NULL != reshuffle->policyAttrs) {
+            if (NULL != reshuffle->policyAttrs)
+            {
                 Datum oldSegID = values[reshuffle->tupleSegIdx - 1];
                 Datum newSegID = Int32GetDatum(
-                        EvalHashSegID(values, nulls, reshuffle->policyAttrs, reshuffle->plan.targetlist,
+                        EvalHashSegID(values,
+                                      nulls,
+                                      reshuffle->policyAttrs,
+                                      reshuffle->plan.targetlist,
                                       reshuffle->oldSegs));
 
                 Assert(oldSegID == newSegID);
@@ -197,159 +188,89 @@ ExecReshuffle(ReshuffleState *node)
 #endif /* USE_ASSERT_CHECKING */
         }
 
-        if (DatumGetInt32(values[reshuffle->tupleSegIdx - 1]) >= getgpsegmentCount())
-            elog(ERROR, "ERROR SEGMENT ID : %d", DatumGetInt32(values[reshuffle->tupleSegIdx - 1]));
+		/* check */
+        if (DatumGetInt32(values[reshuffle->tupleSegIdx - 1]) >=
+            getgpsegmentCount())
+            elog(ERROR, "ERROR SEGMENT ID : %d",
+                 DatumGetInt32(values[reshuffle->tupleSegIdx - 1]));
 
     }
     else if (reshuffle->ptype == POLICYTYPE_REPLICATED)
     {
+		int segIdx;
+
+		/* For replicated tables*/
         if (GpIdentity.segindex + reshuffle->oldSegs >=
             getgpsegmentCount())
             return NULL;
 
-        while (1)
+		/*
+		 * Each old semgent cound be responsible to copy data to
+		 * more than one new segments
+		 */
+        do
         {
+			/* To copy data to the first new segments */
             if (node->prevSegIdx == GpIdentity.segindex)
             {
                 slot = ExecProcNode(outerNode);
-
                 if (TupIsNull(slot)) {
                     return NULL;
                 }
+
+				ExecStoreAllNullTuple(node->prevSlot);
+				copyReshuffleSlot(node->prevSlot,
+								  slot_get_values(slot),
+								  slot_get_isnull(slot));
             }
-            else
-            {
-                slot = node->slot;
-            }
+
+            Assert(!TupIsNull(node->prevSlot));
+
+            slot = node->prevSlot;
 
             slot_getallattrs(slot);
-            values = slot_get_values(slot);
-            nulls = slot_get_isnull(slot);
+			values = slot_get_values(slot);
+			nulls = slot_get_isnull(slot);
 
-            dmlAction = DatumGetInt32(values[splitUpdate->actionColIdx - 1]);
+			dmlAction = DatumGetInt32(values[splitUpdate->actionColIdx - 1]);
 
-            Assert(dmlAction == DML_INSERT || dmlAction == DML_DELETE);
+			Assert(dmlAction == DML_INSERT || dmlAction == DML_DELETE);
 
-            if(dmlAction == DML_DELETE)
-                continue;
+			/* Reshuffling replicate table does not need to delete tuple */
+			if(dmlAction == DML_DELETE)
+				continue;
 
-            int segIdx = node->prevSegIdx + reshuffle->oldSegs;
+			/* Get the destination segments */
+            segIdx = node->prevSegIdx + reshuffle->oldSegs;
             if (segIdx >= getgpsegmentCount())
             {
+
+				/*
+				 * If tuple is copied to all destination segments, we can
+				 * process the next tuple now.
+				 */
                 node->prevSegIdx = GpIdentity.segindex;
-                node->slot = NULL;
+				ExecStoreAllNullTuple(node->prevSlot);;
                 continue;
             }
 
-
             node->prevSegIdx = segIdx;
-            node->slot = slot;
-            values[reshuffle->tupleSegIdx - 1] = segIdx;
+            values[reshuffle->tupleSegIdx - 1] = Int32GetDatum(segIdx);
 
             break;
-        }
+        }while(1);
     }
+	else
+	{
+		Assert(false);
+	}
 
     return slot;
 }
 
-///**
-// * Returns true if tuple matches hash filter.
-// */
-//static bool TupleMatchesHashFilter(Result *resultNode, TupleTableSlot *resultSlot)
-//{
-//    bool res = true;
-//
-//    Assert(resultNode);
-//    Assert(!TupIsNull(resultSlot));
-//
-//    if (resultNode->hashFilter)
-//    {
-//        Assert(resultNode->hashFilter);
-//        ListCell	*cell = NULL;
-//
-//        CdbHash *hash = makeCdbHash(GpIdentity.numsegments);
-//        cdbhashinit(hash);
-//        foreach(cell, resultNode->hashList)
-//        {
-//            /**
-//             * Note that a table may be randomly distributed. The hashList will be empty.
-//             */
-//            Datum		hAttr;
-//            bool		isnull;
-//            Oid			att_type;
-//
-//            int attnum = lfirst_int(cell);
-//
-//            Assert(attnum > 0);
-//            hAttr = slot_getattr(resultSlot, attnum, &isnull);
-//            if (!isnull)
-//            {
-//                att_type = resultSlot->tts_tupleDescriptor->attrs[attnum - 1]->atttypid;
-//
-//                if (get_typtype(att_type) == 'd')
-//                    att_type = getBaseType(att_type);
-//
-//                /* CdbHash treats all array-types as ANYARRAYOID, it doesn't know how to hash
-//                 * the individual types (why is this ?) */
-//                if (typeIsArrayType(att_type))
-//                    att_type = ANYARRAYOID;
-//
-//                cdbhash(hash, hAttr, att_type);
-//            }
-//            else
-//                cdbhashnull(hash);
-//        }
-//        int targetSeg = cdbhashreduce(hash);
-//
-//        pfree(hash);
-//
-//        res = (targetSeg == GpIdentity.segindex);
-//    }
-//
-//    return res;
-//}
-//
-///* ----------------------------------------------------------------
-// *		ExecResultMarkPos
-// * ----------------------------------------------------------------
-// */
-//void
-//ExecResultMarkPos(ResultState *node)
-//{
-//    PlanState  *outerPlan = outerPlanState(node);
-//
-//    if (outerPlan != NULL)
-//        ExecMarkPos(outerPlan);
-//    else
-//        elog(DEBUG2, "Result nodes do not support mark/restore");
-//}
-//
-///* ----------------------------------------------------------------
-// *		ExecResultRestrPos
-// * ----------------------------------------------------------------
-// */
-//void
-//ExecResultRestrPos(ResultState *node)
-//{
-//    PlanState  *outerPlan = outerPlanState(node);
-//
-//    if (outerPlan != NULL)
-//        ExecRestrPos(outerPlan);
-//    else
-//        elog(ERROR, "Result nodes do not support mark/restore");
-//}
-
-
-
-
-
 /* ----------------------------------------------------------------
- *		ExecInitResult
+ *		ExecInitReshuffle
  *
- *		Creates the run-time state information for the result node
- *		produced by the planner and initializes outer relations
- *		(child nodes).
  * ----------------------------------------------------------------
  */
 
@@ -357,6 +278,8 @@ ReshuffleState *
 ExecInitReshuffle(Reshuffle *node, EState *estate, int eflags)
 {
     ReshuffleState *reshufflestate;
+    bool has_oids;
+    TupleDesc tupDesc;
 
     /* check for unsupported flags */
     Assert(!(eflags & (EXEC_FLAG_MARK | EXEC_FLAG_BACKWARD)) ||
@@ -369,36 +292,12 @@ ExecInitReshuffle(Reshuffle *node, EState *estate, int eflags)
     reshufflestate->ps.plan = (Plan *) node;
     reshufflestate->ps.state = estate;
 
-    //resstate->inputFullyConsumed = false;
-    //resstate->rs_checkqual = (node->resconstantqual == NULL) ? false : true;
-
-    /*
-     * Miscellaneous initialization
-     *
-     * create expression context for node
-     */
-    ExecAssignExprContext(estate, &reshufflestate->ps);
-
-    //resstate->isSRF = false;
-
-    /*resstate->ps.ps_TupFromTlist = false;*/
-
-    /*
-     * tuple table initialization
-     */
-    ExecInitResultTupleSlot(estate, &reshufflestate->ps);
-
     /*
      * initialize child expressions
      */
-    //reshufflestate->ps.targetlist = (List *)
-    //        ExecInitExpr((Expr *) node->plan.targetlist,
-    //                     (PlanState *) reshufflestate);
     reshufflestate->ps.qual = (List *)
             ExecInitExpr((Expr *) node->plan.qual,
                          (PlanState *) reshufflestate);
-    //reshufflestate->resconstantqual = ExecInitExpr((Expr *) node->resconstantqual,
-     //                                        (PlanState *) resstate);
 
     /*
      * initialize child nodes
@@ -409,6 +308,12 @@ ExecInitReshuffle(Reshuffle *node, EState *estate, int eflags)
      * we don't use inner plan
      */
     Assert(innerPlan(node) == NULL);
+
+    /*
+     * tuple table initialization
+     */
+    ExecInitResultTupleSlot(estate, &reshufflestate->ps);
+
 
     /*
      * initialize tuple type and projection info
@@ -424,15 +329,21 @@ ExecInitReshuffle(Reshuffle *node, EState *estate, int eflags)
     }
 #endif
 
+	/* Init the segments id to current segment id */
     reshufflestate->prevSegIdx = GpIdentity.segindex;
+
+    reshufflestate->prevSlot = ExecInitExtraTupleSlot(estate);
+
+    ExecContextForcesOids((PlanState *) reshufflestate, &has_oids);
+
+    tupDesc = ExecTypeFromTL(node->plan.targetlist, has_oids);
+    ExecSetSlotDescriptor(reshufflestate->prevSlot, tupDesc);
 
     return reshufflestate;
 }
 
 /* ----------------------------------------------------------------
- *		ExecEndResult
- *
- *		frees up storage allocated through C routines
+ *		ExecEndReshuffle
  * ----------------------------------------------------------------
  */
 void
@@ -447,7 +358,7 @@ ExecEndReshuffle(ReshuffleState *node)
      * clean out the tuple table
      */
     ExecClearTuple(node->ps.ps_ResultTupleSlot);
-
+    ExecClearTuple(node->prevSlot);
     /*
      * shut down subplans
      */
@@ -460,10 +371,6 @@ ExecEndReshuffle(ReshuffleState *node)
 void
 ExecReScanReshuffle(ReshuffleState *node)
 {
-    //node->inputFullyConsumed = false;
-    //node->isSRF = false;
-    //node->rs_checkqual = (node->resconstantqual == NULL) ? false : true;
-
     /*
      * If chgParam of subnode is not null then plan will be re-scanned by
      * first ExecProcNode.

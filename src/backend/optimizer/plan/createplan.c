@@ -6599,6 +6599,7 @@ adjust_modifytable_flow(PlannerInfo *root, ModifyTable *node)
 			RangeTblEntry *rte = rt_fetch(rti, root->parse->rtable);
 			GpPolicy   *targetPolicy;
 			GpPolicyType targetPolicyType;
+			Query *qry = root->parse;
 
 			Assert(rti > 0);
 			Assert(rte->rtekind == RTE_RELATION);
@@ -6635,19 +6636,17 @@ adjust_modifytable_flow(PlannerInfo *root, ModifyTable *node)
 											targetPolicy->attrs)) ||
 						/* for randomly table*/
 						(targetPolicy->nattrs == 0 &&
-						numsegments != getgpsegmentCount()))
+						 qry->reshuffle))
 				{
 					List	   *hashExpr;
 					Plan	*new_subplan;
 
 					new_subplan = (Plan *) make_splitupdate(root, (ModifyTable *) node, subplan, rte, rti);
-                    if(numsegments != getgpsegmentCount())
+                    if(qry->reshuffle)
 					{
 						new_subplan = (Plan *) make_reshuffle(root, new_subplan, rte, rti);
 
-						extern void
-						request_explicit_motion2(Plan *plan, Index resultRelationsIdx, List *rtable);
-						request_explicit_motion2(new_subplan, rti, root->glob->finalrtable);
+						request_explicit_motion(new_subplan, rti, root->glob->finalrtable);
 					}
 					else
 					{
@@ -6712,18 +6711,13 @@ adjust_modifytable_flow(PlannerInfo *root, ModifyTable *node)
 			else if (targetPolicyType == POLICYTYPE_REPLICATED)
 			{
 				if (node->operation == CMD_UPDATE &&
-					numsegments != getgpsegmentCount())
+					qry->reshuffle)
 				{
-					List	   *hashExpr;
 					Plan	*new_subplan;
 
 					new_subplan = (Plan *) make_splitupdate(root, (ModifyTable *) node, subplan, rte, rti);
-
 					new_subplan = (Plan *) make_reshuffle(root, new_subplan, rte, rti);
-
-					extern void
-					request_explicit_motion2(Plan *plan, Index resultRelationsIdx, List *rtable);
-					request_explicit_motion2(new_subplan, rti, root->glob->finalrtable);
+					request_explicit_motion(new_subplan, rti, root->glob->finalrtable);
 
 					lcp->data.ptr_value = new_subplan;
 

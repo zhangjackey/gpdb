@@ -14039,21 +14039,25 @@ ATExecSetDistributedBy(Relation rel, Node *node, AlterTableCmd *cmd)
 
 				if (pg_strcasecmp(reshuffle_str, def->defname) == 0)
 				{
-					/* TODO: construct a update stmt */
+					/* construct a update stmt with reshuffle flag */
 					char *prelname;
 					char *namespace_name;
 					RangeVar *relation;
 					UpdateStmt *stmt = makeNode(UpdateStmt);
 					ReshuffleExpr *reshuffleExpr = makeNode(ReshuffleExpr);
 					GpPolicy *policy = rel->rd_cdbpolicy;
-					int			i;
+					int	i;
+					Query *q;
+					List *rewritten;
+					DestReceiver *dest;
+
 
 					if(policy->numsegments == getgpsegmentCount())
 						ereport(ERROR,
 								(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
 										errmsg("same segments, useless")));
-					//Assert(GpPolicyIsHashPartitioned(policy));
 
+					stmt->reshuffle = true;
 					stmt->targetList = NIL;
 	
 					/* make an RangeVar to indicate the result relation */
@@ -14076,6 +14080,9 @@ ATExecSetDistributedBy(Relation rel, Node *node, AlterTableCmd *cmd)
 						TupleDesc desc = rel->rd_att;
 						AttrNumber attidx = policy->attrs[i];
 						ColumnRef	*column = makeNode(ColumnRef);
+						/*
+						 *  Use CoalesceExpr to prevent optimization
+						 */
 						CoalesceExpr *coalExpr = makeNode(CoalesceExpr);
 
 						res->name = pstrdup(NameStr(desc->attrs[attidx - 1]->attname));
@@ -14094,13 +14101,6 @@ ATExecSetDistributedBy(Relation rel, Node *node, AlterTableCmd *cmd)
 						stmt->targetList = lappend(stmt->targetList, res);
 					}
 
-					Query *q;
-					List *rewritten;
-					DestReceiver *dest;
-#if 0
-					QueryDesc *queryDesc;
-#endif
-
 					q = parse_analyze((Node *) stmt, reshuffle_sql, NULL, 0);
 
 					AcquireRewriteLocks(q, false);
@@ -14115,7 +14115,7 @@ ATExecSetDistributedBy(Relation rel, Node *node, AlterTableCmd *cmd)
 					PlannedStmt *planned_stmt = planner(q, 0, NULL);
 
 					extern void elog_node_display(int lev, const char *title, void *obj, bool pretty);
-#if 1
+#if 0
 					elog_node_display(WARNING, "debug", planned_stmt->planTree, true);
 #endif
 
