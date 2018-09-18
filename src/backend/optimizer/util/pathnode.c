@@ -1552,7 +1552,25 @@ set_append_path_locus(PlannerInfo *root, Path *pathnode, RelOptInfo *rel,
 				if (!CdbPathLocus_IsSingleQE(subpath->locus))
 				{
 					CdbPathLocus    singleQE;
-					CdbPathLocus_MakeSingleQE(&singleQE, CdbPathLocus_NumSegments(subpath->locus));
+					/*
+					 * It's important to ensure that all the subpaths can be
+					 * gathered to the SAME segment, we must set the same
+					 * numsegments for all the SingleQE, there are many
+					 * options:
+					 *
+					 * 1. a constant 1;
+					 * 2. Min(numsegments of all subpaths);
+					 * 3. Max(numsegments of all subpaths);
+					 * 4. ALL;
+					 *
+					 * Options 2 & 3 need to decide the value with an extra
+					 * scan, option 1 puts all the SingleQE on segment 0
+					 * which makes segment 0 a bottle neck.  So we choose
+					 * option 4, ALL helps to balance the load on all the
+					 * segments and no extra scan is needed.
+					 */
+					int			numsegments = GP_POLICY_ALL_NUMSEGMENTS;
+					CdbPathLocus_MakeSingleQE(&singleQE, numsegments);
 
 					subpath = cdbpath_create_motion_path(root, subpath, subpath->pathkeys, false, singleQE);
 				}
