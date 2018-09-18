@@ -1585,12 +1585,10 @@ set_append_path_locus(PlannerInfo *root, Path *pathnode, RelOptInfo *rel,
 		 */
 		if (l == list_head(subpaths))
 			pathnode->locus = projectedlocus;
-		else if (cdbpathlocus_compare(CdbPathLocus_Comparison_WeakEqual,
+		else if (cdbpathlocus_compare(CdbPathLocus_Comparison_Equal,
 									  pathnode->locus, projectedlocus))
 		{
 			/* compatible */
-			pathnode->locus.numsegments = Max(pathnode->locus.numsegments,
-											  projectedlocus.numsegments);
 		}
 		else if (CdbPathLocus_IsGeneral(pathnode->locus))
 		{

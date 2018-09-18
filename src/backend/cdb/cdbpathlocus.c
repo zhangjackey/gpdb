@@ -111,30 +111,12 @@ cdbpathlocus_compare(CdbPathLocus_Comparison op,
 	ListCell   *bequivpathkeycell;
 
 	Assert(op == CdbPathLocus_Comparison_Equal ||
-		   op == CdbPathLocus_Comparison_WeakEqual ||
 		   op == CdbPathLocus_Comparison_Contains);
 
-	if (op != CdbPathLocus_Comparison_WeakEqual)
-	{
-		/*
-		 * op is Equal or Contains, unless a and b have the same numsegments
-		 * the result is always false.
-		 */
-		if (CdbPathLocus_NumSegments(a) !=
-			CdbPathLocus_NumSegments(b))
-			return false;
-	}
-	else
-	{
-		/*
-		 * op is WeakEqual, the only difference with Equal is that numsegments
-		 * should be ignored during comparison, simulate Equal by setting
-		 * both a & b's numsegments to -1.
-		 */
-		op = CdbPathLocus_Comparison_Equal;
-		a.numsegments = -1;
-		b.numsegments = -1;
-	}
+	/* Unless a and b have the same numsegments the result is always false */
+	if (CdbPathLocus_NumSegments(a) !=
+		CdbPathLocus_NumSegments(b))
+		return false;
 
 	if (CdbPathLocus_IsStrewn(a) ||
 		CdbPathLocus_IsStrewn(b))

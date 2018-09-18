@@ -234,8 +234,6 @@ typedef enum
 {
 	/* locus a and b are Equal if all their attributes are equal */
     CdbPathLocus_Comparison_Equal,
-	/* WeakEqual is similar with Equal, but numsegments is not compared */
-    CdbPathLocus_Comparison_WeakEqual,
     CdbPathLocus_Comparison_Contains
 } CdbPathLocus_Comparison;
 
