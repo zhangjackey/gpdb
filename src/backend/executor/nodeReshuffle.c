@@ -35,7 +35,8 @@
  * 	compute the Hash keys
  */
 static int
-EvalHashSegID(Datum *values, bool *nulls, List *policyAttrs, List *targetlist, int nsegs)
+EvalHashSegID(Datum *values, bool *nulls, List *policyAttrs,
+			  List *targetlist, int nsegs)
 {
     CdbHash *hnew = makeCdbHash(nsegs);
     uint32 newSeg;
@@ -170,9 +171,9 @@ ExecReshuffle(ReshuffleState *node)
                         Int32GetDatum((random() % (newSegs - oldSegs)) + oldSegs);
             }
         }
+#ifdef USE_ASSERT_CHECKING
         else
         {
-#ifdef USE_ASSERT_CHECKING
             if (NULL != reshuffle->policyAttrs)
             {
                 Datum oldSegID = values[reshuffle->tupleSegIdx - 1];
@@ -185,7 +186,6 @@ ExecReshuffle(ReshuffleState *node)
 
                 Assert(oldSegID == newSegID);
             }
-#endif /* USE_ASSERT_CHECKING */
         }
 
 		/* check */
@@ -193,14 +193,15 @@ ExecReshuffle(ReshuffleState *node)
             getgpsegmentCount())
             elog(ERROR, "ERROR SEGMENT ID : %d",
                  DatumGetInt32(values[reshuffle->tupleSegIdx - 1]));
-
+#endif
     }
     else if (reshuffle->ptype == POLICYTYPE_REPLICATED)
     {
 		int segIdx;
 
 		/* For replicated tables*/
-        if (GpIdentity.segindex + reshuffle->oldSegs >=
+        if (GpIdentity.segindex >= reshuffle->oldSegs ||
+			GpIdentity.segindex + reshuffle->oldSegs >=
             getgpsegmentCount())
             return NULL;
 
@@ -214,23 +215,23 @@ ExecReshuffle(ReshuffleState *node)
             if (node->prevSegIdx == GpIdentity.segindex)
             {
                 slot = ExecProcNode(outerNode);
-                if (TupIsNull(slot)) {
+                if (TupIsNull(slot))
+				{
                     return NULL;
                 }
 
-				ExecStoreAllNullTuple(node->prevSlot);
-				copyReshuffleSlot(node->prevSlot,
-								  slot_get_values(slot),
-								  slot_get_isnull(slot));
+				node->prevSlot = slot;
             }
+			else
+			{
+				/* It seems OK without copying the slot*/
+				slot = node->prevSlot;
+			}
 
-            Assert(!TupIsNull(node->prevSlot));
-
-            slot = node->prevSlot;
+            Assert(!TupIsNull(slot));
 
             slot_getallattrs(slot);
 			values = slot_get_values(slot);
-			nulls = slot_get_isnull(slot);
 
 			dmlAction = DatumGetInt32(values[splitUpdate->actionColIdx - 1]);
 
@@ -244,13 +245,12 @@ ExecReshuffle(ReshuffleState *node)
             segIdx = node->prevSegIdx + reshuffle->oldSegs;
             if (segIdx >= getgpsegmentCount())
             {
-
 				/*
 				 * If tuple is copied to all destination segments, we can
 				 * process the next tuple now.
 				 */
                 node->prevSegIdx = GpIdentity.segindex;
-				ExecStoreAllNullTuple(node->prevSlot);;
+				node->prevSlot = NULL;
                 continue;
             }
 
@@ -262,6 +262,7 @@ ExecReshuffle(ReshuffleState *node)
     }
 	else
 	{
+		/* Impossible case*/
 		Assert(false);
 	}
 
@@ -331,13 +332,7 @@ ExecInitReshuffle(Reshuffle *node, EState *estate, int eflags)
 
 	/* Init the segments id to current segment id */
     reshufflestate->prevSegIdx = GpIdentity.segindex;
-
-    reshufflestate->prevSlot = ExecInitExtraTupleSlot(estate);
-
-    ExecContextForcesOids((PlanState *) reshufflestate, &has_oids);
-
-    tupDesc = ExecTypeFromTL(node->plan.targetlist, has_oids);
-    ExecSetSlotDescriptor(reshufflestate->prevSlot, tupDesc);
+    reshufflestate->prevSlot = NULL;
 
     return reshufflestate;
 }
@@ -358,7 +353,7 @@ ExecEndReshuffle(ReshuffleState *node)
      * clean out the tuple table
      */
     ExecClearTuple(node->ps.ps_ResultTupleSlot);
-    ExecClearTuple(node->prevSlot);
+
     /*
      * shut down subplans
      */
@@ -366,6 +361,7 @@ ExecEndReshuffle(ReshuffleState *node)
 
     EndPlanStateGpmonPkt(&node->ps);
 
+	return;
 }
 
 void
@@ -378,4 +374,6 @@ ExecReScanReshuffle(ReshuffleState *node)
     if (node->ps.lefttree &&
         node->ps.lefttree->chgParam == NULL)
         ExecReScan(node->ps.lefttree);
+
+	return;
 }
