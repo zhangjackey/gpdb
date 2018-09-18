@@ -125,8 +125,8 @@ typedef struct CdbPathLocus
 	(CdbPathLocus_IsHashed(locus) ? list_length((locus).partkey_h) :	\
 	 (CdbPathLocus_IsHashedOJ(locus) ? list_length((locus).partkey_oj) : 0))
 
-#define CdbPathLocus_NumSegments(locus)  \
-    ((locus).numsegments)
+#define CdbPathLocus_NumSegments(locus)         \
+            ((locus).numsegments)
 
 /*
  * CdbPathLocus_IsEqual
@@ -232,7 +232,7 @@ typedef struct CdbPathLocus
 
 typedef enum
 {
-	/* locus a and b are Equal if all their attributes are equal */
+    /* locus a and b are Equal if all their attributes are equal */
     CdbPathLocus_Comparison_Equal,
     CdbPathLocus_Comparison_Contains
 } CdbPathLocus_Comparison;

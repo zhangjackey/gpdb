@@ -958,7 +958,7 @@ cdbpath_motion_for_join(PlannerInfo *root,
 	 *
 	 * Path that contains WorkTableScan cannot be replicated.
 	 */
-    /* ok_to_replicate means broadcast */
+	/* ok_to_replicate means broadcast */
 	outer.ok_to_replicate = !outer.has_wts;
 	inner.ok_to_replicate = true;
 	switch (jointype)

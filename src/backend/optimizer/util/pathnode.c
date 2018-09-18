@@ -1641,7 +1641,7 @@ create_result_path(List *quals)
 	pathnode->path.startup_cost = 0;
 	pathnode->path.total_cost = cpu_tuple_cost;
 
-    //FIXME: assume it is on all segments
+	/*FIXME: assume it is on all segments*/
 	CdbPathLocus_MakeGeneral(&pathnode->path.locus, GP_POLICY_ALL_NUMSEGMENTS);
 	pathnode->path.motionHazard = false;
 	pathnode->path.rescannable = true;

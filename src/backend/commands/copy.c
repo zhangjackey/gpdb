@@ -1973,8 +1973,8 @@ CopyDispatchOnSegment(CopyState cstate, const CopyStmt *stmt)
 		Oid			relid = RangeVarGetRelid(stmt->relation, NoLock, true);
 		GpPolicy   *relpolicy = GpPolicyFetch(NULL, relid);
 
-        dispatchStmt->policy = createRandomPartitionedPolicy(NULL,
-													 relpolicy->numsegments);
+		dispatchStmt->policy = createRandomPartitionedPolicy(NULL,
+															 relpolicy->numsegments);
 	}
 
 	CdbDispatchUtilityStatement((Node *) dispatchStmt,

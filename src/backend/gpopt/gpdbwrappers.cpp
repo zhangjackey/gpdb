@@ -3216,12 +3216,12 @@ gpdb::IsAbortRequested
 
 GpPolicy *
 gpdb::MakeGpPolicy
-       (
-               MemoryContext mcxt,
-               GpPolicyType ptype,
-               int nattrs,
-               int numsegments
-       )
+		(
+			MemoryContext mcxt,
+			GpPolicyType ptype,
+			int nattrs,
+			int numsegments
+		)
 {
 	GP_WRAP_START;
 	{

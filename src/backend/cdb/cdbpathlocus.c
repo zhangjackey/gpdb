@@ -656,7 +656,7 @@ cdbpathlocus_join(CdbPathLocus a, CdbPathLocus b)
 	ListCell   *bcell;
 	List	   *equivpathkeylist;
 	CdbPathLocus ojlocus = {0};
-    int         numsegments = CdbPathLocus_CommonSegments(a, b);
+	int         numsegments = CdbPathLocus_CommonSegments(a, b);
 
 	Assert(cdbpathlocus_is_valid(a));
 	Assert(cdbpathlocus_is_valid(b));
@@ -665,29 +665,29 @@ cdbpathlocus_join(CdbPathLocus a, CdbPathLocus b)
 	if (cdbpathlocus_compare(CdbPathLocus_Comparison_Equal, a, b))
 		return a;
 
-    /*
-     * SingleQE may have different segment counts.
-     */
-    if(CdbPathLocus_IsSingleQE(a) &&
-       CdbPathLocus_IsSingleQE(b))
-    {
-        CdbPathLocus_MakeSingleQE(&ojlocus, numsegments);
-        return ojlocus;
-    }
+	/*
+	 * SingleQE may have different segment counts.
+	 */
+	if(CdbPathLocus_IsSingleQE(a) &&
+	   CdbPathLocus_IsSingleQE(b))
+	{
+		CdbPathLocus_MakeSingleQE(&ojlocus, numsegments);
+		return ojlocus;
+	}
 
 	/* If one rel is general or replicated, result stays with the other rel. */
 	if (CdbPathLocus_IsGeneral(a) ||
 		CdbPathLocus_IsReplicated(a))
-    {
-        b.numsegments = numsegments;
-        return b;
-    }
+	{
+		b.numsegments = numsegments;
+		return b;
+	}
 	if (CdbPathLocus_IsGeneral(b) ||
 		CdbPathLocus_IsReplicated(b))
-    {
-        a.numsegments = numsegments;
-        return a;
-    }
+	{
+		a.numsegments = numsegments;
+		return a;
+	}
 
 	/*
 	 * FIXME: should we adjust the returned numsegments like
@@ -701,7 +701,7 @@ cdbpathlocus_join(CdbPathLocus a, CdbPathLocus b)
 	/* This is an outer join, or one or both inputs are outer join results. */
 
 	Assert(CdbPathLocus_Degree(a) > 0 &&
-           CdbPathLocus_NumSegments(a) == CdbPathLocus_NumSegments(b) &&
+		   CdbPathLocus_NumSegments(a) == CdbPathLocus_NumSegments(b) &&
 		   CdbPathLocus_Degree(a) == CdbPathLocus_Degree(b));
 
 	if (CdbPathLocus_IsHashed(a) &&
