@@ -58,13 +58,21 @@ FOREIGN_KEY(localoid REFERENCES pg_class(oid));
 #define __GP_POLICY_EVIL_NUMSEGMENTS		(666)
 
 /*
- * Default numsegments for each motion type.
+ * All the segments.  getgpsegmentCount() should not be used directly as it
+ * will return 0 in utility mode, but a valid numsegments should always be
+ * greater than 0.
  */
 #define GP_POLICY_ALL_NUMSEGMENTS			Max(1, getgpsegmentCount())
+
+/*
+ * The segments suitable for Entry locus, which include both master and all
+ * the segments.
+ *
+ * FIXME: in fact numsegments only describe a range of segments from 0 to
+ * `numsegments-1`, master is not described by it at all.  So far this does
+ * not matter.
+ */
 #define GP_POLICY_ENTRY_NUMSEGMENTS			GP_POLICY_ALL_NUMSEGMENTS
-#define GP_POLICY_GATHER_NUMSEGMENTS		(1)
-#define GP_POLICY_DIRECT_NUMSEGMENTS		(1)
-#define GP_POLICY_UNINITIALIZED_NUMSEGMENTS	(-1)
 
 /*
  * GpPolicyType represents a type of policy under which a relation's

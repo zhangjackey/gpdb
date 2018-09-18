@@ -1040,19 +1040,12 @@ make_sorted_union_motion(PlannerInfo *root,
 	outSegIdx[0] = destSegIndex;
 
 	/*
-	 * When Gather to QE the numsegments is used to determine the candidate
-	 * segments to put the SingleQE node on, so try to find out a proper
-	 * value for it.
-	 *
-	 * FIXME: but is GATHER a good value if we can't find the proper value?
-	 * in the case for inherited tables, a parent flow can be created before
-	 * sub flows, we might need to adjust the creation to pass numsegments
-	 * correctly.
+	 * When Gather to QE, numsegments is used to determine the candidate
+	 * segments to put the SingleQE node on, the information is contained
+	 * in sub plan.
 	 */
-	if (lefttree->flow)
-		numsegments = lefttree->flow->numsegments;
-	else
-		numsegments = GP_POLICY_GATHER_NUMSEGMENTS;
+	Assert(lefttree->flow);
+	numsegments = lefttree->flow->numsegments;
 
 	motion = make_motion(root, lefttree,
 						 numSortCols, sortColIdx, sortOperators, collations, nullsFirst,
