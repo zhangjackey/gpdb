@@ -112,6 +112,25 @@ typedef enum CdbLocusType
  *
  * If the distribution is not partitioned, then the 'partkey' field is NIL
  *      and the CdbPathLocus_Degree() macro returns 0.
+ *
+ * The attribute numsegments specify how many segments are the tuples
+ * distributed on, from segment 0 to segment `numsegments-1`.  In the future
+ * we might further change it to a range or list so discontinuous segments
+ * can be described.  This numsegments has different meaning for different
+ * locustype:
+ * - Null: numsegments is usually meaningless in Null locus as it will be
+ *   remade to other locus types later.  But there is also cases that we set
+ *   a valid numsegments in Null locus, this value will be kept when remade
+ *   it to other locus types, and it becomes meaningful after that;
+ * - Entry: numsegments in Entry locus specify the candidate segments to put
+ *   the Entry node on, it's master and all the primary segments in current
+ *   implementation;
+ * - SingleQE: numsegments in SingleQE locus specify the candidate segments
+ *   to put the SingleQE node on, although SingleQE is always executed on one
+ *   segment but numsegments usually have a value > 1;
+ * - General: similar with Entry and SingleQE;
+ * - SegmentGeneral, Replicated, Hashed, HashedOJ, Strewn: numsegments in
+ *   these locus types specify the segments that contain the tuples;
  */
 typedef struct CdbPathLocus
 {
