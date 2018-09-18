@@ -1480,7 +1480,7 @@ cdbpath_motion_for_join(PlannerInfo *root,
 	return cdbpathlocus_join(outer.path->locus, inner.path->locus);
 
 fail:							/* can't do this join */
-	CdbPathLocus_MakeNull(&outer.move_to, 0);
+	CdbPathLocus_MakeNull(&outer.move_to, __GP_POLICY_EVIL_NUMSEGMENTS);
 	return outer.move_to;
 }								/* cdbpath_motion_for_join */
 

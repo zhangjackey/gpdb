@@ -2616,7 +2616,7 @@ create_functionscan_path(PlannerInfo *root, RelOptInfo *rel, RangeTblEntry *rte)
 				CdbPathLocus_MakeEntry(&pathnode->locus, GP_POLICY_ENTRY_NUMSEGMENTS);
 				break;
 			case PROEXECLOCATION_ALL_SEGMENTS:
-				CdbPathLocus_MakeStrewn(&pathnode->locus, getgpsegmentCount());
+				CdbPathLocus_MakeStrewn(&pathnode->locus, GP_POLICY_ALL_NUMSEGMENTS);
 				break;
 			default:
 				elog(ERROR, "unrecognized proexeclocation '%c'", exec_location);

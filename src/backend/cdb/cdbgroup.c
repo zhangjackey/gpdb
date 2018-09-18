@@ -5383,11 +5383,11 @@ initAggPlanInfo(AggPlanInfo *info, Path *input_path, Plan *input_plan)
 	if (input_path != NULL)
 		info->input_locus = input_path->locus;
 	else
-		CdbPathLocus_MakeNull(&info->input_locus, 0);
+		CdbPathLocus_MakeNull(&info->input_locus, __GP_POLICY_EVIL_NUMSEGMENTS);
 
 	info->group_type = MPP_GRP_TYPE_BASEPLAN;
 	info->group_prep = MPP_GRP_PREP_NONE;
-	CdbPathLocus_MakeNull(&info->output_locus, 0);
+	CdbPathLocus_MakeNull(&info->output_locus, __GP_POLICY_EVIL_NUMSEGMENTS);
 	info->distinctkey_collocate = false;
 
 	info->valid = false;
