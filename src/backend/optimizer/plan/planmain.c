@@ -137,7 +137,7 @@ query_planner(PlannerInfo *root, List *tlist,
 			exec_location = check_execute_on_functions((Node *) parse->targetList);
 
 			if (exec_location == PROEXECLOCATION_MASTER)
-				CdbPathLocus_MakeEntry(&(*cheapest_path)->locus, GP_POLICY_ENTRY_NUMSEGMENTS);
+				CdbPathLocus_MakeEntry(&(*cheapest_path)->locus);
 			else if (exec_location == PROEXECLOCATION_ALL_SEGMENTS)
 			{
 				CdbPathLocus_MakeStrewn(&(*cheapest_path)->locus, GP_POLICY_ALL_NUMSEGMENTS);

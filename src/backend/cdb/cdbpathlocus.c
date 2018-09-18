@@ -301,7 +301,7 @@ cdbpathlocus_from_baserel(struct PlannerInfo *root,
 
 	if (Gp_role != GP_ROLE_DISPATCH)
 	{
-		CdbPathLocus_MakeEntry(&result, GP_POLICY_ENTRY_NUMSEGMENTS);
+		CdbPathLocus_MakeEntry(&result);
 		return result;
 	}
 
@@ -328,7 +328,7 @@ cdbpathlocus_from_baserel(struct PlannerInfo *root,
 	}
 	/* Normal catalog access */
 	else
-		CdbPathLocus_MakeEntry(&result, GP_POLICY_ENTRY_NUMSEGMENTS);
+		CdbPathLocus_MakeEntry(&result);
 
 	return result;
 }								/* cdbpathlocus_from_baserel */
@@ -389,7 +389,7 @@ cdbpathlocus_from_subquery(struct PlannerInfo *root,
 	{
 		case FLOW_SINGLETON:
 			if (flow->segindex == -1)
-				CdbPathLocus_MakeEntry(&locus, GP_POLICY_ENTRY_NUMSEGMENTS);
+				CdbPathLocus_MakeEntry(&locus);
 			else
 			{
 				/*
