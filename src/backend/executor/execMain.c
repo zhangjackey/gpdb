@@ -4602,6 +4602,7 @@ AdjustReplicatedTableCounts(EState *estate)
 	int i;
 	ResultRelInfo *resultRelInfo;
 	bool containReplicatedTable = false;
+	int			numsegments = getgpsegmentCount();
 
 	if (Gp_role != GP_ROLE_DISPATCH)
 		return;
@@ -4615,7 +4616,10 @@ AdjustReplicatedTableCounts(EState *estate)
 			continue;
 
 		if (GpPolicyIsReplicated(resultRelInfo->ri_RelationDesc->rd_cdbpolicy))
+		{
 			containReplicatedTable = true;
+			numsegments = resultRelInfo->ri_RelationDesc->rd_cdbpolicy->numsegments;
+		}
 		else if (containReplicatedTable)
 		{
 			/*
@@ -4627,5 +4631,5 @@ AdjustReplicatedTableCounts(EState *estate)
 	}
 
 	if (containReplicatedTable)
-		estate->es_processed = estate->es_processed / getgpsegmentCount();
+		estate->es_processed = estate->es_processed / numsegments;
 }

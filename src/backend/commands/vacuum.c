@@ -1515,9 +1515,7 @@ vac_update_relstats(Relation relation,
 	 */
 	if (num_pages < 1.0)
 	{
-#if 0
 		Assert(num_tuples < 1.0);
-#endif
 		num_pages = 1.0;
 	}
 

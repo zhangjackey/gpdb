@@ -2188,8 +2188,8 @@ analyzeEstimateReltuplesRelpages(Oid relationOid, float4 *relTuples, float4 *rel
 
 		if (GpPolicyIsReplicated(policy))
 		{
-			*relTuples += DatumGetFloat4(values[0]) / getgpsegmentCount();
-			*relPages += DatumGetFloat4(values[1]) / getgpsegmentCount();
+			*relTuples += DatumGetFloat4(values[0]) / policy->numsegments;
+			*relPages += DatumGetFloat4(values[1]) / policy->numsegments;
 		}
 		else
 		{
