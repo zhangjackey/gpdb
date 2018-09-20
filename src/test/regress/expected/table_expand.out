@@ -2798,858 +2798,858 @@ drop table t;
 -- insert
 --
 insert into t1 (c1) values (1), (2), (3), (4), (5), (6)
-	returning gp_segment_id, c1, c2;
- gp_segment_id | c1 | c2 
----------------+----+----
-             0 |  1 |   
-             0 |  2 |   
-             0 |  3 |   
-             0 |  4 |   
-             0 |  5 |   
-             0 |  6 |   
+	returning c1, c2;
+ c1 | c2 
+----+----
+  1 |   
+  2 |   
+  3 |   
+  4 |   
+  5 |   
+  6 |   
 (6 rows)
 
 insert into t2 (c1) values (1), (2), (3), (4), (5), (6)
-	returning gp_segment_id, c1, c2;
- gp_segment_id | c1 | c2 
----------------+----+----
-             1 |  1 |   
-             1 |  3 |   
-             1 |  5 |   
-             0 |  2 |   
-             0 |  4 |   
-             0 |  6 |   
+	returning c1, c2;
+ c1 | c2 
+----+----
+  1 |   
+  2 |   
+  3 |   
+  6 |   
+  4 |   
+  5 |   
 (6 rows)
 
 insert into d1 (c1) values (1), (2), (3), (4), (5), (6)
-	returning gp_segment_id, c1, c2;
- gp_segment_id | c1 | c2 
----------------+----+----
-             0 |  1 |   
-             0 |  2 |   
-             0 |  3 |   
-             0 |  4 |   
-             0 |  5 |   
-             0 |  6 |   
+	returning c1, c2;
+ c1 | c2 
+----+----
+  1 |   
+  2 |   
+  3 |   
+  4 |   
+  5 |   
+  6 |   
 (6 rows)
 
 insert into d2 (c1) values (1), (2), (3), (4), (5), (6)
-	returning gp_segment_id, c1, c2;
- gp_segment_id | c1 | c2 
----------------+----+----
-             0 |  1 |   
-             0 |  2 |   
-             0 |  3 |   
-             0 |  4 |   
-             0 |  5 |   
-             0 |  6 |   
+	returning c1, c2;
+ c1 | c2 
+----+----
+  1 |   
+  2 |   
+  3 |   
+  4 |   
+  5 |   
+  6 |   
 (6 rows)
 
 insert into r1 (c1) values (1), (2), (3), (4), (5), (6)
-	returning gp_segment_id, c1, c2;
- gp_segment_id | c1 | c2 
----------------+----+----
-             0 |  1 |   
-             0 |  2 |   
-             0 |  3 |   
-             0 |  4 |   
-             0 |  5 |   
-             0 |  6 |   
+	returning c1, c2;
+ c1 | c2 
+----+----
+  1 |   
+  2 |   
+  3 |   
+  4 |   
+  5 |   
+  6 |   
 (6 rows)
 
 insert into r2 (c1) values (1), (2), (3), (4), (5), (6)
-	returning gp_segment_id, c1, c2;
- gp_segment_id | c1 | c2 
----------------+----+----
-             0 |  2 |   
-             0 |  4 |   
-             0 |  6 |   
-             1 |  1 |   
-             1 |  3 |   
-             1 |  5 |   
+	returning c1, c2;
+ c1 | c2 
+----+----
+  1 |   
+  3 |   
+  4 |   
+  5 |   
+  6 |   
+  2 |   
 (6 rows)
 
 begin;
-insert into t1 (c1) values (1) returning gp_segment_id, c1, c2;
- gp_segment_id | c1 | c2 
----------------+----+----
-             0 |  1 |   
+insert into t1 (c1) values (1) returning c1, c2;
+ c1 | c2 
+----+----
+  1 |   
 (1 row)
 
-insert into d1 (c1) values (1) returning gp_segment_id, c1, c2;
- gp_segment_id | c1 | c2 
----------------+----+----
-             0 |  1 |   
+insert into d1 (c1) values (1) returning c1, c2;
+ c1 | c2 
+----+----
+  1 |   
 (1 row)
 
-insert into r1 (c1) values (1) returning gp_segment_id, c1, c2;
- gp_segment_id | c1 | c2 
----------------+----+----
-             0 |  1 |   
+insert into r1 (c1) values (1) returning c1, c2;
+ c1 | c2 
+----+----
+  1 |   
 (1 row)
 
-insert into t2 (c1) values (1) returning gp_segment_id, c1, c2;
- gp_segment_id | c1 | c2 
----------------+----+----
-             1 |  1 |   
+insert into t2 (c1) values (1) returning c1, c2;
+ c1 | c2 
+----+----
+  1 |   
 (1 row)
 
-insert into d2 (c1) values (1) returning gp_segment_id, c1, c2;
- gp_segment_id | c1 | c2 
----------------+----+----
-             0 |  1 |   
+insert into d2 (c1) values (1) returning c1, c2;
+ c1 | c2 
+----+----
+  1 |   
 (1 row)
 
-insert into r2 (c1) values (1) returning gp_segment_id, c1, c2;
- gp_segment_id | c1 | c2 
----------------+----+----
-             1 |  1 |   
+insert into r2 (c1) values (1) returning c1, c2;
+ c1 | c2 
+----+----
+  1 |   
 (1 row)
 
 rollback;
 begin;
 insert into t1 (c1) select i from generate_series(1, 20) i
-	returning gp_segment_id, c1, c2;
- gp_segment_id | c1 | c2 
----------------+----+----
-             0 |  1 |   
-             0 |  2 |   
-             0 |  3 |   
-             0 |  4 |   
-             0 |  5 |   
-             0 |  6 |   
-             0 |  7 |   
-             0 |  8 |   
-             0 |  9 |   
-             0 | 10 |   
-             0 | 11 |   
-             0 | 12 |   
-             0 | 13 |   
-             0 | 14 |   
-             0 | 15 |   
-             0 | 16 |   
-             0 | 17 |   
-             0 | 18 |   
-             0 | 19 |   
-             0 | 20 |   
+	returning c1, c2;
+ c1 | c2 
+----+----
+  1 |   
+  2 |   
+  3 |   
+  4 |   
+  5 |   
+  6 |   
+  7 |   
+  8 |   
+  9 |   
+ 10 |   
+ 11 |   
+ 12 |   
+ 13 |   
+ 14 |   
+ 15 |   
+ 16 |   
+ 17 |   
+ 18 |   
+ 19 |   
+ 20 |   
 (20 rows)
 
 insert into d1 (c1) select i from generate_series(1, 20) i
-	returning gp_segment_id, c1, c2;
- gp_segment_id | c1 | c2 
----------------+----+----
-             0 |  1 |   
-             0 |  2 |   
-             0 |  3 |   
-             0 |  4 |   
-             0 |  5 |   
-             0 |  6 |   
-             0 |  7 |   
-             0 |  8 |   
-             0 |  9 |   
-             0 | 10 |   
-             0 | 11 |   
-             0 | 12 |   
-             0 | 13 |   
-             0 | 14 |   
-             0 | 15 |   
-             0 | 16 |   
-             0 | 17 |   
-             0 | 18 |   
-             0 | 19 |   
-             0 | 20 |   
+	returning c1, c2;
+ c1 | c2 
+----+----
+  1 |   
+  2 |   
+  3 |   
+  4 |   
+  5 |   
+  6 |   
+  7 |   
+  8 |   
+  9 |   
+ 10 |   
+ 11 |   
+ 12 |   
+ 13 |   
+ 14 |   
+ 15 |   
+ 16 |   
+ 17 |   
+ 18 |   
+ 19 |   
+ 20 |   
 (20 rows)
 
 insert into r1 (c1) select i from generate_series(1, 20) i
-	returning gp_segment_id, c1, c2;
- gp_segment_id | c1 | c2 
----------------+----+----
-             0 |  1 |   
-             0 |  2 |   
-             0 |  3 |   
-             0 |  4 |   
-             0 |  5 |   
-             0 |  6 |   
-             0 |  7 |   
-             0 |  8 |   
-             0 |  9 |   
-             0 | 10 |   
-             0 | 11 |   
-             0 | 12 |   
-             0 | 13 |   
-             0 | 14 |   
-             0 | 15 |   
-             0 | 16 |   
-             0 | 17 |   
-             0 | 18 |   
-             0 | 19 |   
-             0 | 20 |   
+	returning c1, c2;
+ c1 | c2 
+----+----
+  1 |   
+  2 |   
+  3 |   
+  4 |   
+  5 |   
+  6 |   
+  7 |   
+  8 |   
+  9 |   
+ 10 |   
+ 11 |   
+ 12 |   
+ 13 |   
+ 14 |   
+ 15 |   
+ 16 |   
+ 17 |   
+ 18 |   
+ 19 |   
+ 20 |   
 (20 rows)
 
 insert into t2 (c1) select i from generate_series(1, 20) i
-	returning gp_segment_id, c1, c2;
- gp_segment_id | c1 | c2 
----------------+----+----
-             1 |  1 |   
-             1 |  3 |   
-             1 |  5 |   
-             1 |  7 |   
-             1 |  9 |   
-             1 | 11 |   
-             1 | 13 |   
-             1 | 15 |   
-             1 | 17 |   
-             1 | 19 |   
-             0 |  2 |   
-             0 |  4 |   
-             0 |  6 |   
-             0 |  8 |   
-             0 | 10 |   
-             0 | 12 |   
-             0 | 14 |   
-             0 | 16 |   
-             0 | 18 |   
-             0 | 20 |   
+	returning c1, c2;
+ c1 | c2 
+----+----
+  4 |   
+  5 |   
+ 11 |   
+ 12 |   
+ 13 |   
+ 14 |   
+ 19 |   
+  1 |   
+  2 |   
+  3 |   
+  6 |   
+  7 |   
+  8 |   
+  9 |   
+ 10 |   
+ 15 |   
+ 16 |   
+ 17 |   
+ 18 |   
+ 20 |   
 (20 rows)
 
 insert into d2 (c1) select i from generate_series(1, 20) i
-	returning gp_segment_id, c1, c2;
- gp_segment_id | c1 | c2 
----------------+----+----
-             0 |  1 |   
-             0 |  2 |   
-             0 |  3 |   
-             0 |  4 |   
-             0 |  5 |   
-             0 |  6 |   
-             0 |  7 |   
-             0 |  8 |   
-             0 |  9 |   
-             0 | 10 |   
-             0 | 11 |   
-             0 | 12 |   
-             0 | 13 |   
-             0 | 14 |   
-             0 | 15 |   
-             0 | 16 |   
-             0 | 17 |   
-             0 | 18 |   
-             0 | 19 |   
-             0 | 20 |   
+	returning c1, c2;
+ c1 | c2 
+----+----
+  1 |   
+  2 |   
+  3 |   
+  4 |   
+  5 |   
+  6 |   
+  7 |   
+  8 |   
+  9 |   
+ 10 |   
+ 11 |   
+ 12 |   
+ 13 |   
+ 14 |   
+ 15 |   
+ 16 |   
+ 17 |   
+ 18 |   
+ 19 |   
+ 20 |   
 (20 rows)
 
 insert into r2 (c1) select i from generate_series(1, 20) i
-	returning gp_segment_id, c1, c2;
- gp_segment_id | c1 | c2 
----------------+----+----
-             1 |  1 |   
-             1 |  3 |   
-             1 |  5 |   
-             1 |  7 |   
-             1 |  9 |   
-             1 | 11 |   
-             1 | 13 |   
-             1 | 15 |   
-             1 | 17 |   
-             1 | 19 |   
-             0 |  2 |   
-             0 |  4 |   
-             0 |  6 |   
-             0 |  8 |   
-             0 | 10 |   
-             0 | 12 |   
-             0 | 14 |   
-             0 | 16 |   
-             0 | 18 |   
-             0 | 20 |   
+	returning c1, c2;
+ c1 | c2 
+----+----
+  4 |   
+  6 |   
+ 14 |   
+ 15 |   
+ 16 |   
+ 18 |   
+ 19 |   
+  1 |   
+  2 |   
+  3 |   
+  5 |   
+  7 |   
+  8 |   
+  9 |   
+ 10 |   
+ 11 |   
+ 12 |   
+ 13 |   
+ 17 |   
+ 20 |   
 (20 rows)
 
 rollback;
 begin;
-insert into t1 (c1, c2) select c1, c2 from t1 returning gp_segment_id, c1, c2;
- gp_segment_id | c1 | c2 
----------------+----+----
-             0 |  1 |   
-             0 |  2 |   
-             0 |  3 |   
-             0 |  4 |   
-             0 |  5 |   
-             0 |  6 |   
+insert into t1 (c1, c2) select c1, c2 from t1 returning c1, c2;
+ c1 | c2 
+----+----
+  1 |   
+  2 |   
+  3 |   
+  4 |   
+  5 |   
+  6 |   
 (6 rows)
 
-insert into t1 (c1, c2) select c2, c1 from t1 returning gp_segment_id, c1, c2;
- gp_segment_id | c1 | c2 
----------------+----+----
-             0 |    |  1
-             0 |    |  2
-             0 |    |  3
-             0 |    |  4
-             0 |    |  5
-             0 |    |  6
-             0 |    |  1
-             0 |    |  2
-             0 |    |  3
-             0 |    |  4
-             0 |    |  5
-             0 |    |  6
+insert into t1 (c1, c2) select c2, c1 from t1 returning c1, c2;
+ c1 | c2 
+----+----
+    |  1
+    |  2
+    |  3
+    |  4
+    |  5
+    |  6
+    |  1
+    |  2
+    |  3
+    |  4
+    |  5
+    |  6
 (12 rows)
 
-insert into t1 (c1, c2) select c1, c2 from t2 returning gp_segment_id, c1, c2;
- gp_segment_id | c1 | c2 
----------------+----+----
-             0 |  2 |   
-             0 |  4 |   
-             0 |  6 |   
-             0 |  1 |   
-             0 |  3 |   
-             0 |  5 |   
+insert into t1 (c1, c2) select c1, c2 from t2 returning c1, c2;
+ c1 | c2 
+----+----
+  4 |   
+  5 |   
+  1 |   
+  2 |   
+  3 |   
+  6 |   
 (6 rows)
 
-insert into t1 (c1, c2) select c2, c1 from t2 returning gp_segment_id, c1, c2;
- gp_segment_id | c1 | c2 
----------------+----+----
-             0 |    |  2
-             0 |    |  4
-             0 |    |  6
-             0 |    |  1
-             0 |    |  3
-             0 |    |  5
+insert into t1 (c1, c2) select c2, c1 from t2 returning c1, c2;
+ c1 | c2 
+----+----
+    |  1
+    |  2
+    |  3
+    |  6
+    |  4
+    |  5
 (6 rows)
 
-insert into t1 (c1, c2) select c1, c2 from d1 returning gp_segment_id, c1, c2;
- gp_segment_id | c1 | c2 
----------------+----+----
-             0 |  1 |   
-             0 |  2 |   
-             0 |  3 |   
-             0 |  4 |   
-             0 |  5 |   
-             0 |  6 |   
+insert into t1 (c1, c2) select c1, c2 from d1 returning c1, c2;
+ c1 | c2 
+----+----
+  1 |   
+  2 |   
+  3 |   
+  4 |   
+  5 |   
+  6 |   
 (6 rows)
 
-insert into t1 (c1, c2) select c1, c2 from d2 returning gp_segment_id, c1, c2;
- gp_segment_id | c1 | c2 
----------------+----+----
-             0 |  1 |   
-             0 |  2 |   
-             0 |  3 |   
-             0 |  4 |   
-             0 |  5 |   
-             0 |  6 |   
+insert into t1 (c1, c2) select c1, c2 from d2 returning c1, c2;
+ c1 | c2 
+----+----
+  1 |   
+  2 |   
+  3 |   
+  4 |   
+  5 |   
+  6 |   
 (6 rows)
 
-insert into t1 (c1, c2) select c1, c2 from r1 returning gp_segment_id, c1, c2;
- gp_segment_id | c1 | c2 
----------------+----+----
-             0 |  1 |   
-             0 |  2 |   
-             0 |  3 |   
-             0 |  4 |   
-             0 |  5 |   
-             0 |  6 |   
+insert into t1 (c1, c2) select c1, c2 from r1 returning c1, c2;
+ c1 | c2 
+----+----
+  1 |   
+  2 |   
+  3 |   
+  4 |   
+  5 |   
+  6 |   
 (6 rows)
 
-insert into t1 (c1, c2) select c1, c2 from r2 returning gp_segment_id, c1, c2;
- gp_segment_id | c1 | c2 
----------------+----+----
-             0 |  2 |   
-             0 |  4 |   
-             0 |  6 |   
-             0 |  1 |   
-             0 |  3 |   
-             0 |  5 |   
-(6 rows)
-
-rollback;
-begin;
-insert into t2 (c1, c2) select c1, c2 from t1 returning gp_segment_id, c1, c2;
- gp_segment_id | c1 | c2 
----------------+----+----
-             0 |  2 |   
-             0 |  4 |   
-             0 |  6 |   
-             1 |  1 |   
-             1 |  3 |   
-             1 |  5 |   
-(6 rows)
-
-insert into t2 (c1, c2) select c2, c1 from t1 returning gp_segment_id, c1, c2;
- gp_segment_id | c1 | c2 
----------------+----+----
-             1 |    |  1
-             1 |    |  3
-             1 |    |  5
-             0 |    |  2
-             0 |    |  4
-             0 |    |  6
-(6 rows)
-
-insert into t2 (c1, c2) select c1, c2 from d1 returning gp_segment_id, c1, c2;
- gp_segment_id | c1 | c2 
----------------+----+----
-             0 |  2 |   
-             0 |  4 |   
-             0 |  6 |   
-             1 |  1 |   
-             1 |  3 |   
-             1 |  5 |   
-(6 rows)
-
-insert into t2 (c1, c2) select c1, c2 from d2 returning gp_segment_id, c1, c2;
- gp_segment_id | c1 | c2 
----------------+----+----
-             0 |  2 |   
-             0 |  4 |   
-             0 |  6 |   
-             1 |  1 |   
-             1 |  3 |   
-             1 |  5 |   
-(6 rows)
-
-insert into t2 (c1, c2) select c1, c2 from r1 returning gp_segment_id, c1, c2;
- gp_segment_id | c1 | c2 
----------------+----+----
-             0 |  2 |   
-             0 |  4 |   
-             0 |  6 |   
-             1 |  1 |   
-             1 |  3 |   
-             1 |  5 |   
-(6 rows)
-
-insert into t2 (c1, c2) select c1, c2 from r2 returning gp_segment_id, c1, c2;
- gp_segment_id | c1 | c2 
----------------+----+----
-             0 |  2 |   
-             0 |  4 |   
-             0 |  6 |   
-             1 |  1 |   
-             1 |  3 |   
-             1 |  5 |   
+insert into t1 (c1, c2) select c1, c2 from r2 returning c1, c2;
+ c1 | c2 
+----+----
+  2 |   
+  1 |   
+  3 |   
+  4 |   
+  5 |   
+  6 |   
 (6 rows)
 
 rollback;
 begin;
-insert into d1 (c1, c2) select c1, c2 from t1 returning gp_segment_id, c1, c2;
- gp_segment_id | c1 | c2 
----------------+----+----
-             0 |  1 |   
-             0 |  2 |   
-             0 |  3 |   
-             0 |  4 |   
-             0 |  5 |   
-             0 |  6 |   
+insert into t2 (c1, c2) select c1, c2 from t1 returning c1, c2;
+ c1 | c2 
+----+----
+  1 |   
+  2 |   
+  3 |   
+  6 |   
+  4 |   
+  5 |   
 (6 rows)
 
-insert into d1 (c1, c2) select c2, c1 from t1 returning gp_segment_id, c1, c2;
- gp_segment_id | c1 | c2 
----------------+----+----
-             0 |    |  1
-             0 |    |  2
-             0 |    |  3
-             0 |    |  4
-             0 |    |  5
-             0 |    |  6
+insert into t2 (c1, c2) select c2, c1 from t1 returning c1, c2;
+ c1 | c2 
+----+----
+    |  2
+    |  4
+    |  6
+    |  1
+    |  3
+    |  5
 (6 rows)
 
-insert into d1 (c1, c2) select c1, c2 from t2 returning gp_segment_id, c1, c2;
- gp_segment_id | c1 | c2 
----------------+----+----
-             0 |  1 |   
-             0 |  3 |   
-             0 |  5 |   
-             0 |  2 |   
-             0 |  4 |   
-             0 |  6 |   
+insert into t2 (c1, c2) select c1, c2 from d1 returning c1, c2;
+ c1 | c2 
+----+----
+  1 |   
+  2 |   
+  3 |   
+  6 |   
+  4 |   
+  5 |   
 (6 rows)
 
-insert into d1 (c1, c2) select c2, c1 from t2 returning gp_segment_id, c1, c2;
- gp_segment_id | c1 | c2 
----------------+----+----
-             0 |    |  2
-             0 |    |  4
-             0 |    |  6
-             0 |    |  1
-             0 |    |  3
-             0 |    |  5
+insert into t2 (c1, c2) select c1, c2 from d2 returning c1, c2;
+ c1 | c2 
+----+----
+  1 |   
+  2 |   
+  3 |   
+  6 |   
+  4 |   
+  5 |   
 (6 rows)
 
-insert into d1 (c1, c2) select c1, c2 from d1 returning gp_segment_id, c1, c2;
- gp_segment_id | c1 | c2 
----------------+----+----
-             0 |  1 |   
-             0 |  2 |   
-             0 |  3 |   
-             0 |  4 |   
-             0 |  5 |   
-             0 |  6 |   
-             0 |  1 |   
-             0 |  2 |   
-             0 |  3 |   
-             0 |  4 |   
-             0 |  5 |   
-             0 |  6 |   
-             0 |    |  1
-             0 |    |  2
-             0 |    |  3
-             0 |    |  4
-             0 |    |  5
-             0 |    |  6
-             0 |  1 |   
-             0 |  3 |   
-             0 |  5 |   
-             0 |  2 |   
-             0 |  4 |   
-             0 |  6 |   
-             0 |    |  2
-             0 |    |  4
-             0 |    |  6
-             0 |    |  1
-             0 |    |  3
-             0 |    |  5
+insert into t2 (c1, c2) select c1, c2 from r1 returning c1, c2;
+ c1 | c2 
+----+----
+  1 |   
+  2 |   
+  3 |   
+  6 |   
+  4 |   
+  5 |   
+(6 rows)
+
+insert into t2 (c1, c2) select c1, c2 from r2 returning c1, c2;
+ c1 | c2 
+----+----
+  4 |   
+  5 |   
+  2 |   
+  1 |   
+  3 |   
+  6 |   
+(6 rows)
+
+rollback;
+begin;
+insert into d1 (c1, c2) select c1, c2 from t1 returning c1, c2;
+ c1 | c2 
+----+----
+  1 |   
+  2 |   
+  3 |   
+  4 |   
+  5 |   
+  6 |   
+(6 rows)
+
+insert into d1 (c1, c2) select c2, c1 from t1 returning c1, c2;
+ c1 | c2 
+----+----
+    |  1
+    |  2
+    |  3
+    |  4
+    |  5
+    |  6
+(6 rows)
+
+insert into d1 (c1, c2) select c1, c2 from t2 returning c1, c2;
+ c1 | c2 
+----+----
+  1 |   
+  2 |   
+  3 |   
+  6 |   
+  4 |   
+  5 |   
+(6 rows)
+
+insert into d1 (c1, c2) select c2, c1 from t2 returning c1, c2;
+ c1 | c2 
+----+----
+    |  1
+    |  2
+    |  3
+    |  6
+    |  4
+    |  5
+(6 rows)
+
+insert into d1 (c1, c2) select c1, c2 from d1 returning c1, c2;
+ c1 | c2 
+----+----
+  1 |   
+  2 |   
+  3 |   
+  4 |   
+  5 |   
+  6 |   
+  1 |   
+  2 |   
+  3 |   
+  4 |   
+  5 |   
+  6 |   
+    |  1
+    |  2
+    |  3
+    |  4
+    |  5
+    |  6
+  1 |   
+  2 |   
+  3 |   
+  6 |   
+  4 |   
+  5 |   
+    |  1
+    |  2
+    |  3
+    |  6
+    |  4
+    |  5
 (30 rows)
 
-insert into d1 (c1, c2) select c1, c2 from d2 returning gp_segment_id, c1, c2;
- gp_segment_id | c1 | c2 
----------------+----+----
-             0 |  1 |   
-             0 |  2 |   
-             0 |  3 |   
-             0 |  4 |   
-             0 |  5 |   
-             0 |  6 |   
+insert into d1 (c1, c2) select c1, c2 from d2 returning c1, c2;
+ c1 | c2 
+----+----
+  1 |   
+  2 |   
+  3 |   
+  4 |   
+  5 |   
+  6 |   
 (6 rows)
 
-insert into d1 (c1, c2) select c1, c2 from r1 returning gp_segment_id, c1, c2;
- gp_segment_id | c1 | c2 
----------------+----+----
-             0 |  1 |   
-             0 |  2 |   
-             0 |  3 |   
-             0 |  4 |   
-             0 |  5 |   
-             0 |  6 |   
+insert into d1 (c1, c2) select c1, c2 from r1 returning c1, c2;
+ c1 | c2 
+----+----
+  1 |   
+  2 |   
+  3 |   
+  4 |   
+  5 |   
+  6 |   
 (6 rows)
 
-insert into d1 (c1, c2) select c1, c2 from r2 returning gp_segment_id, c1, c2;
- gp_segment_id | c1 | c2 
----------------+----+----
-             0 |  2 |   
-             0 |  4 |   
-             0 |  6 |   
-             0 |  1 |   
-             0 |  3 |   
-             0 |  5 |   
+insert into d1 (c1, c2) select c1, c2 from r2 returning c1, c2;
+ c1 | c2 
+----+----
+  2 |   
+  1 |   
+  3 |   
+  4 |   
+  5 |   
+  6 |   
 (6 rows)
 
 rollback;
 begin;
-insert into d2 (c1, c2) select c1, c2 from t1 returning gp_segment_id, c1, c2;
- gp_segment_id | c1 | c2 
----------------+----+----
-             0 |  1 |   
-             0 |  2 |   
-             0 |  3 |   
-             0 |  4 |   
-             0 |  5 |   
-             0 |  6 |   
+insert into d2 (c1, c2) select c1, c2 from t1 returning c1, c2;
+ c1 | c2 
+----+----
+  1 |   
+  2 |   
+  3 |   
+  4 |   
+  5 |   
+  6 |   
 (6 rows)
 
-insert into d2 (c1, c2) select c2, c1 from t1 returning gp_segment_id, c1, c2;
- gp_segment_id | c1 | c2 
----------------+----+----
-             0 |    |  1
-             0 |    |  2
-             0 |    |  3
-             0 |    |  4
-             0 |    |  5
-             0 |    |  6
+insert into d2 (c1, c2) select c2, c1 from t1 returning c1, c2;
+ c1 | c2 
+----+----
+    |  1
+    |  2
+    |  3
+    |  4
+    |  5
+    |  6
 (6 rows)
 
-insert into d2 (c1, c2) select c1, c2 from d1 returning gp_segment_id, c1, c2;
- gp_segment_id | c1 | c2 
----------------+----+----
-             0 |  1 |   
-             0 |  2 |   
-             0 |  3 |   
-             0 |  4 |   
-             0 |  5 |   
-             0 |  6 |   
+insert into d2 (c1, c2) select c1, c2 from d1 returning c1, c2;
+ c1 | c2 
+----+----
+  1 |   
+  2 |   
+  3 |   
+  4 |   
+  5 |   
+  6 |   
 (6 rows)
 
-insert into d2 (c1, c2) select c1, c2 from d2 returning gp_segment_id, c1, c2;
- gp_segment_id | c1 | c2 
----------------+----+----
-             0 |  1 |   
-             0 |  2 |   
-             0 |  3 |   
-             0 |  4 |   
-             0 |  5 |   
-             0 |  6 |   
-             0 |  1 |   
-             0 |  2 |   
-             0 |  3 |   
-             0 |  4 |   
-             0 |  5 |   
-             0 |  6 |   
-             0 |    |  1
-             0 |    |  2
-             0 |    |  3
-             0 |    |  4
-             0 |    |  5
-             0 |    |  6
-             0 |  1 |   
-             0 |  2 |   
-             0 |  3 |   
-             0 |  4 |   
-             0 |  5 |   
-             0 |  6 |   
+insert into d2 (c1, c2) select c1, c2 from d2 returning c1, c2;
+ c1 | c2 
+----+----
+  1 |   
+  2 |   
+  3 |   
+  4 |   
+  5 |   
+  6 |   
+  1 |   
+  2 |   
+  3 |   
+  4 |   
+  5 |   
+  6 |   
+    |  1
+    |  2
+    |  3
+    |  4
+    |  5
+    |  6
+  1 |   
+  2 |   
+  3 |   
+  4 |   
+  5 |   
+  6 |   
 (24 rows)
 
-insert into d2 (c1, c2) select c1, c2 from r1 returning gp_segment_id, c1, c2;
- gp_segment_id | c1 | c2 
----------------+----+----
-             0 |  1 |   
-             0 |  2 |   
-             0 |  3 |   
-             0 |  4 |   
-             0 |  5 |   
-             0 |  6 |   
+insert into d2 (c1, c2) select c1, c2 from r1 returning c1, c2;
+ c1 | c2 
+----+----
+  1 |   
+  2 |   
+  3 |   
+  4 |   
+  5 |   
+  6 |   
 (6 rows)
 
-insert into d2 (c1, c2) select c1, c2 from r2 returning gp_segment_id, c1, c2;
- gp_segment_id | c1 | c2 
----------------+----+----
-             0 |  2 |   
-             0 |  4 |   
-             0 |  6 |   
-             0 |  1 |   
-             0 |  3 |   
-             0 |  5 |   
+insert into d2 (c1, c2) select c1, c2 from r2 returning c1, c2;
+ c1 | c2 
+----+----
+  2 |   
+  1 |   
+  3 |   
+  4 |   
+  5 |   
+  6 |   
 (6 rows)
 
 rollback;
 begin;
-insert into r1 (c1, c2) select c1, c2 from t1 returning gp_segment_id, c1, c2;
- gp_segment_id | c1 | c2 
----------------+----+----
-             0 |  1 |   
-             0 |  2 |   
-             0 |  3 |   
-             0 |  4 |   
-             0 |  5 |   
-             0 |  6 |   
+insert into r1 (c1, c2) select c1, c2 from t1 returning c1, c2;
+ c1 | c2 
+----+----
+  1 |   
+  2 |   
+  3 |   
+  4 |   
+  5 |   
+  6 |   
 (6 rows)
 
-insert into r1 (c1, c2) select c2, c1 from t1 returning gp_segment_id, c1, c2;
- gp_segment_id | c1 | c2 
----------------+----+----
-             0 |    |  1
-             0 |    |  2
-             0 |    |  3
-             0 |    |  4
-             0 |    |  5
-             0 |    |  6
+insert into r1 (c1, c2) select c2, c1 from t1 returning c1, c2;
+ c1 | c2 
+----+----
+    |  1
+    |  2
+    |  3
+    |  4
+    |  5
+    |  6
 (6 rows)
 
-insert into r1 (c1, c2) select c1, c2 from t2 returning gp_segment_id, c1, c2;
- gp_segment_id | c1 | c2 
----------------+----+----
-             0 |  1 |   
-             0 |  3 |   
-             0 |  5 |   
-             0 |  2 |   
-             0 |  4 |   
-             0 |  6 |   
+insert into r1 (c1, c2) select c1, c2 from t2 returning c1, c2;
+ c1 | c2 
+----+----
+  1 |   
+  2 |   
+  3 |   
+  6 |   
+  4 |   
+  5 |   
 (6 rows)
 
-insert into r1 (c1, c2) select c2, c1 from t2 returning gp_segment_id, c1, c2;
- gp_segment_id | c1 | c2 
----------------+----+----
-             0 |    |  2
-             0 |    |  4
-             0 |    |  6
-             0 |    |  1
-             0 |    |  3
-             0 |    |  5
+insert into r1 (c1, c2) select c2, c1 from t2 returning c1, c2;
+ c1 | c2 
+----+----
+    |  1
+    |  2
+    |  3
+    |  6
+    |  4
+    |  5
 (6 rows)
 
-insert into r1 (c1, c2) select c1, c2 from d1 returning gp_segment_id, c1, c2;
- gp_segment_id | c1 | c2 
----------------+----+----
-             0 |  1 |   
-             0 |  2 |   
-             0 |  3 |   
-             0 |  4 |   
-             0 |  5 |   
-             0 |  6 |   
+insert into r1 (c1, c2) select c1, c2 from d1 returning c1, c2;
+ c1 | c2 
+----+----
+  1 |   
+  2 |   
+  3 |   
+  4 |   
+  5 |   
+  6 |   
 (6 rows)
 
-insert into r1 (c1, c2) select c1, c2 from d2 returning gp_segment_id, c1, c2;
- gp_segment_id | c1 | c2 
----------------+----+----
-             0 |  1 |   
-             0 |  2 |   
-             0 |  3 |   
-             0 |  4 |   
-             0 |  5 |   
-             0 |  6 |   
+insert into r1 (c1, c2) select c1, c2 from d2 returning c1, c2;
+ c1 | c2 
+----+----
+  1 |   
+  2 |   
+  3 |   
+  4 |   
+  5 |   
+  6 |   
 (6 rows)
 
-insert into r1 (c1, c2) select c1, c2 from r1 returning gp_segment_id, c1, c2;
- gp_segment_id | c1 | c2 
----------------+----+----
-             0 |  1 |   
-             0 |  2 |   
-             0 |  3 |   
-             0 |  4 |   
-             0 |  5 |   
-             0 |  6 |   
-             0 |  1 |   
-             0 |  2 |   
-             0 |  3 |   
-             0 |  4 |   
-             0 |  5 |   
-             0 |  6 |   
-             0 |    |  1
-             0 |    |  2
-             0 |    |  3
-             0 |    |  4
-             0 |    |  5
-             0 |    |  6
-             0 |  1 |   
-             0 |  3 |   
-             0 |  5 |   
-             0 |  2 |   
-             0 |  4 |   
-             0 |  6 |   
-             0 |    |  2
-             0 |    |  4
-             0 |    |  6
-             0 |    |  1
-             0 |    |  3
-             0 |    |  5
-             0 |  1 |   
-             0 |  2 |   
-             0 |  3 |   
-             0 |  4 |   
-             0 |  5 |   
-             0 |  6 |   
-             0 |  1 |   
-             0 |  2 |   
-             0 |  3 |   
-             0 |  4 |   
-             0 |  5 |   
-             0 |  6 |   
+insert into r1 (c1, c2) select c1, c2 from r1 returning c1, c2;
+ c1 | c2 
+----+----
+  1 |   
+  2 |   
+  3 |   
+  4 |   
+  5 |   
+  6 |   
+  1 |   
+  2 |   
+  3 |   
+  4 |   
+  5 |   
+  6 |   
+    |  1
+    |  2
+    |  3
+    |  4
+    |  5
+    |  6
+  1 |   
+  2 |   
+  3 |   
+  6 |   
+  4 |   
+  5 |   
+    |  1
+    |  2
+    |  3
+    |  6
+    |  4
+    |  5
+  1 |   
+  2 |   
+  3 |   
+  4 |   
+  5 |   
+  6 |   
+  1 |   
+  2 |   
+  3 |   
+  4 |   
+  5 |   
+  6 |   
 (42 rows)
 
-insert into r1 (c1, c2) select c1, c2 from r2 returning gp_segment_id, c1, c2;
- gp_segment_id | c1 | c2 
----------------+----+----
-             0 |  2 |   
-             0 |  4 |   
-             0 |  6 |   
-             0 |  1 |   
-             0 |  3 |   
-             0 |  5 |   
+insert into r1 (c1, c2) select c1, c2 from r2 returning c1, c2;
+ c1 | c2 
+----+----
+  2 |   
+  1 |   
+  3 |   
+  4 |   
+  5 |   
+  6 |   
 (6 rows)
 
 rollback;
 begin;
-insert into r2 (c1, c2) select c1, c2 from t1 returning gp_segment_id, c1, c2;
- gp_segment_id | c1 | c2 
----------------+----+----
-             0 |  2 |   
-             0 |  4 |   
-             0 |  6 |   
-             1 |  1 |   
-             1 |  3 |   
-             1 |  5 |   
+insert into r2 (c1, c2) select c1, c2 from t1 returning c1, c2;
+ c1 | c2 
+----+----
+  1 |   
+  2 |   
+  3 |   
+  4 |   
+  5 |   
+  6 |   
 (6 rows)
 
-insert into r2 (c1, c2) select c2, c1 from t1 returning gp_segment_id, c1, c2;
- gp_segment_id | c1 | c2 
----------------+----+----
-             0 |    |  2
-             0 |    |  4
-             0 |    |  6
-             1 |    |  1
-             1 |    |  3
-             1 |    |  5
+insert into r2 (c1, c2) select c2, c1 from t1 returning c1, c2;
+ c1 | c2 
+----+----
+    |  1
+    |  2
+    |  4
+    |  5
+    |  6
+    |  3
 (6 rows)
 
-insert into r2 (c1, c2) select c1, c2 from d1 returning gp_segment_id, c1, c2;
- gp_segment_id | c1 | c2 
----------------+----+----
-             1 |  1 |   
-             1 |  3 |   
-             1 |  5 |   
-             0 |  2 |   
-             0 |  4 |   
-             0 |  6 |   
+insert into r2 (c1, c2) select c1, c2 from d1 returning c1, c2;
+ c1 | c2 
+----+----
+  4 |   
+  5 |   
+  1 |   
+  2 |   
+  3 |   
+  6 |   
 (6 rows)
 
-insert into r2 (c1, c2) select c1, c2 from d2 returning gp_segment_id, c1, c2;
- gp_segment_id | c1 | c2 
----------------+----+----
-             0 |  2 |   
-             0 |  4 |   
-             0 |  6 |   
-             1 |  1 |   
-             1 |  3 |   
-             1 |  5 |   
+insert into r2 (c1, c2) select c1, c2 from d2 returning c1, c2;
+ c1 | c2 
+----+----
+  4 |   
+  5 |   
+  1 |   
+  2 |   
+  3 |   
+  6 |   
 (6 rows)
 
-insert into r2 (c1, c2) select c1, c2 from r1 returning gp_segment_id, c1, c2;
- gp_segment_id | c1 | c2 
----------------+----+----
-             1 |  1 |   
-             1 |  3 |   
-             1 |  5 |   
-             0 |  2 |   
-             0 |  4 |   
-             0 |  6 |   
+insert into r2 (c1, c2) select c1, c2 from r1 returning c1, c2;
+ c1 | c2 
+----+----
+  3 |   
+  4 |   
+  6 |   
+  1 |   
+  2 |   
+  5 |   
 (6 rows)
 
-insert into r2 (c1, c2) select c1, c2 from r2 returning gp_segment_id, c1, c2;
- gp_segment_id | c1 | c2 
----------------+----+----
-             0 |  4 |   
-             0 |  2 |   
-             0 |  6 |   
-             0 |    |  4
-             0 |  2 |   
-             0 |  6 |   
-             0 |  4 |   
-             0 |  2 |   
-             0 |  6 |   
-             0 |  1 |   
-             0 |  5 |   
-             0 |  3 |   
-             0 |    |  1
-             0 |    |  5
-             0 |  3 |   
-             0 |  1 |   
-             0 |  5 |   
-             0 |  3 |   
-             1 |  2 |   
-             1 |  6 |   
-             1 |  4 |   
-             1 |    |  2
-             1 |    |  6
-             1 |  4 |   
-             1 |  2 |   
-             1 |  6 |   
-             1 |  4 |   
-             1 |  3 |   
-             1 |  1 |   
-             1 |  5 |   
-             1 |    |  3
-             1 |  1 |   
-             1 |  5 |   
-             1 |  3 |   
-             1 |  1 |   
-             1 |  5 |   
+insert into r2 (c1, c2) select c1, c2 from r2 returning c1, c2;
+ c1 | c2 
+----+----
+  2 |   
+  1 |   
+  6 |   
+    |  5
+  5 |   
+  4 |   
+  5 |   
+  4 |   
+  6 |   
+  1 |   
+  2 |   
+  3 |   
+  6 |   
+  1 |   
+  2 |   
+  3 |   
+  6 |   
+  3 |   
+  4 |   
+  2 |   
+  3 |   
+  4 |   
+  5 |   
+    |  1
+    |  2
+    |  4
+    |  6
+  4 |   
+  5 |   
+  1 |   
+  2 |   
+  1 |   
+  3 |   
+  5 |   
+    |  3
+  6 |   
 (36 rows)
 
 rollback;
