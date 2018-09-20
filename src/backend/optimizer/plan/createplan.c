@@ -7063,7 +7063,8 @@ cdbpathtoplan_create_motion_plan(PlannerInfo *root,
 				/* Degenerate ordering... build unordered Union Receive */
 				motion = make_union_motion(subplan,
 										   destSegIndex,
-										   false	/* useExecutorVarFormat */);
+										   false	/* useExecutorVarFormat */,
+										   CdbPathLocus_NumSegments(path->path.locus));
 			}
 		}
 
@@ -7071,14 +7072,16 @@ cdbpathtoplan_create_motion_plan(PlannerInfo *root,
 		else
 			motion = make_union_motion(subplan,
 									   destSegIndex,
-									   false	/* useExecutorVarFormat */
+									   false	/* useExecutorVarFormat */,
+									   CdbPathLocus_NumSegments(path->path.locus)
 				);
 	}
 
 	/* Send all of the tuples to all of the QEs in gang above... */
 	else if (CdbPathLocus_IsReplicated(path->path.locus))
 		motion = make_broadcast_motion(subplan,
-									   false	/* useExecutorVarFormat */
+									   false	/* useExecutorVarFormat */,
+									   CdbPathLocus_NumSegments(path->path.locus)
 			);
 
 	/* Hashed redistribution to all QEs in gang above... */
@@ -7109,7 +7112,8 @@ cdbpathtoplan_create_motion_plan(PlannerInfo *root,
         }
         motion = make_hashed_motion(subplan,
                                     hashExpr,
-                                    false /* useExecutorVarFormat */);
+                                    false /* useExecutorVarFormat */,
+									CdbPathLocus_NumSegments(path->path.locus));
     }
     else
         Insist(0);
