@@ -135,3 +135,4 @@ ignore: largeobject
 test: with
 test: xml
 test: stats
+test: reshuffle
