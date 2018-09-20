@@ -6629,11 +6629,11 @@ adjust_modifytable_flow(PlannerInfo *root, ModifyTable *node)
 				all_subplans_replicated = false;
 
 				/*
-				 * The planner does not support updating any of the
-				 * partitioning columns.
+				 * If we update the hash keys of hash distributed table
+				 * or need reshuffle data for a random distributed table,
 				 */
 				if (node->operation == CMD_UPDATE &&
-						/* with distributed keys*/
+						/* update hash keys */
 						(targetPolicy->nattrs > 0 &&
 						 isAnyColChangedByUpdate(root, rti, rte,
 											subplan->targetlist,
@@ -6647,14 +6647,19 @@ adjust_modifytable_flow(PlannerInfo *root, ModifyTable *node)
 					Plan	*new_subplan;
 
 					new_subplan = (Plan *) make_splitupdate(root, (ModifyTable *) node, subplan, rte, rti);
+
+					/*
+					 * if need reshuffle, add the Reshuffle node onto the
+					 * SplitUpdate node and Specify the explicit motion
+					 */
                     if(qry->reshuffle)
 					{
 						new_subplan = (Plan *) make_reshuffle(root, new_subplan, rte, rti);
-
 						request_explicit_motion(new_subplan, rti, root->glob->finalrtable);
 					}
 					else
 					{
+						/* Only update hash keys and do not need reshuffle */
 						hashExpr = getExprListFromTargetList(new_subplan->targetlist,
 															 targetPolicy->nattrs,
 															 targetPolicy->attrs,
