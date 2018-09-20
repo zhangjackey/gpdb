@@ -31,7 +31,8 @@ extern Motion *make_sorted_union_motion(PlannerInfo *root,
 						 int numSortCols, AttrNumber *sortColIdx,
 						 Oid *sortOperators, Oid *collations, bool *nullsFirst,
 						 int destSegIndex,
-						 bool useExecutorVarFormat);
+						 bool useExecutorVarFormat,
+						 int numsegments);
 extern Motion *make_hashed_motion(Plan *lefttree,
 								  List *hashExpr,
 								  bool useExecutorVarFormat,

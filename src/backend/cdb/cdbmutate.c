@@ -1031,21 +1031,13 @@ make_sorted_union_motion(PlannerInfo *root,
 						 int numSortCols, AttrNumber *sortColIdx,
 						 Oid *sortOperators, Oid *collations, bool *nullsFirst,
 						 int destSegIndex,
-						 bool useExecutorVarFormat)
+						 bool useExecutorVarFormat,
+						 int numsegments)
 {
 	Motion	   *motion;
-	int			numsegments;
 	int		   *outSegIdx = (int *) palloc(sizeof(int));
 
 	outSegIdx[0] = destSegIndex;
-
-	/*
-	 * When Gather to QE, numsegments is used to determine the candidate
-	 * segments to put the SingleQE node on, the information is contained
-	 * in sub plan.
-	 */
-	Assert(lefttree->flow);
-	numsegments = lefttree->flow->numsegments;
 
 	motion = make_motion(root, lefttree,
 						 numSortCols, sortColIdx, sortOperators, collations, nullsFirst,

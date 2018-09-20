@@ -356,6 +356,8 @@ make_motion_gather(PlannerInfo *root, Plan *subplan, int segindex, List *sortPat
 									   -1.0,
 									   false /* useExecutorVarFormat */ );
 
+		/* FIXME: numsegments */
+
 		motion = make_sorted_union_motion(root,
 										  subplan,
 										  sort->numCols,
@@ -364,7 +366,8 @@ make_motion_gather(PlannerInfo *root, Plan *subplan, int segindex, List *sortPat
 										  sort->collations,
 										  sort->nullsFirst,
 										  segindex,
-										  false /* useExecutorVarFormat */ );
+										  false /* useExecutorVarFormat */,
+										  subplan->flow->numsegments);
 
 		/* throw away the Sort */
 		pfree(sort);

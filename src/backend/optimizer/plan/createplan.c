@@ -7056,7 +7056,8 @@ cdbpathtoplan_create_motion_plan(PlannerInfo *root,
 												  collations,
 												  nullsFirst,
 												  destSegIndex,
-												  false /* useExecutorVarFormat */);
+												  false /* useExecutorVarFormat */,
+												  CdbPathLocus_NumSegments(path->path.locus));
 			}
 			else
 			{
