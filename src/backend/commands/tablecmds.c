@@ -14051,11 +14051,15 @@ ATExecSetDistributedBy(Relation rel, Node *node, AlterTableCmd *cmd)
 					List *rewritten;
 					DestReceiver *dest;
 
-
-					if(policy->numsegments == getgpsegmentCount())
+					if (policy->numsegments == getgpsegmentCount())
 						ereport(ERROR,
 								(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
-										errmsg("same segments, useless")));
+										errmsg("Do not need to reshuffle")));
+
+					if (NULL != lsecond(lprime))
+						ereport(ERROR,
+								(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
+										errmsg("Can not set Distribute By")));
 
 					stmt->reshuffle = true;
 					stmt->targetList = NIL;
@@ -14156,10 +14160,9 @@ ATExecSetDistributedBy(Relation rel, Node *node, AlterTableCmd *cmd)
 
 					/* Step (c) - run on all nodes */
 					ExecutorStart(queryDesc, 0);
-#if 1
+#if 0
 					elog_node_display(WARNING, "debug", queryDesc->planstate->plan, true);
 #endif
-                    //queryDesc->estate->xxx = true;
 
 					ExecutorRun(queryDesc, ForwardScanDirection, 0L);
 					ExecutorFinish(queryDesc);
@@ -14174,11 +14177,16 @@ ATExecSetDistributedBy(Relation rel, Node *node, AlterTableCmd *cmd)
 					GpPolicyReplace(RelationGetRelid(rel), newPolicy);
 					rel->rd_cdbpolicy = GpPolicyCopy(GetMemoryChunkContext(rel), newPolicy);
 
+
+
 					/* Restore the old snapshot */
 					PopActiveSnapshot();
 
 					heap_close(rel, NoLock);
-					return;
+
+					lsecond(lprime) = makeNode(SetDistributionCmd);
+					lprime = lappend(lprime, newPolicy);
+					goto l_distro_fini;
 				}
 				else if (pg_strcasecmp(reorg_str, def->defname) != 0)
 				{
@@ -14357,6 +14365,7 @@ ATExecSetDistributedBy(Relation rel, Node *node, AlterTableCmd *cmd)
 	}
 	else if (Gp_role == GP_ROLE_EXECUTE)
 	{
+		/* Remove "reorganize" since we don't want it in reloptions of pg_class */
 		if (lwith)
 		{
 			ListCell	*lc;
@@ -14368,8 +14377,16 @@ ATExecSetDistributedBy(Relation rel, Node *node, AlterTableCmd *cmd)
 
 				if (pg_strcasecmp(reshuffle_str, def->defname) == 0)
 				{
+					policy = lthird(lprime);
+
+					if (policy)
+					{
+						GpPolicyReplace(RelationGetRelid(rel), policy);
+						rel->rd_cdbpolicy = GpPolicyCopy(GetMemoryChunkContext(rel), policy);
+					}
+
 					heap_close(rel, NoLock);
-					return;
+					goto l_distro_fini;
 				}
 			}
 		}

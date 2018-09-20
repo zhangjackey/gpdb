@@ -5,11 +5,11 @@
  *
  * DESCRIPTION
  *
- * 		Each table have an `numsegments` attribute in the
- * 		GP_DISTRIBUTION_POLICY table,  it indicate that the table
+ * 		Each table has a `numsegments` attribute in the
+ * 		GP_DISTRIBUTION_POLICY table,  it indicates that the table
  * 		data distributed on the first N segments, In common case,
  * 		the `numsegments` equal the total segment count of this
- * 		cluster, that is to say one table need to distributed
+ * 		cluster, that is to say, one table needs to distributed
  * 		the data on all segments.
  *
  * 		When we add new segments into the cluster, `numsegments` no
@@ -20,7 +20,7 @@
  * 			* Update `numsegments`
  *
  * 		It is easy to update `numsegments`, so we focus on how to
- * 		reshuffle the table data, There are 3 type table in the
+ * 		reshuffle the table data, There are 3 type tables in the
  * 		Greenplum database, they are reshuffled in different ways.
  *
  * 		For hash distributed table, we want to reshuffle data
@@ -116,10 +116,10 @@
  * 		segments, so the ReshuffleExpr do not filte any tuples, In
  * 		the Reshuffle node, we neglect the tuple which is generated
  * 		for deleting, only return the inserting tuple to motion. Let
- * 		me illustrate this with an example.
+ * 		me illustrate this with an example:
  *
  * 		if there are 3 old segments in the cluster and we add 4 new
- * 		segments, the segment ID of old segments is (0,1,2), and the
+ * 		segments, the segment ID of old segments is (0,1,2) and the
  * 		segment ID of new segments is (3,4,5,6), when reshuffle the
  * 		replicated table, the seg#0 is responsible to copy data to
  * 		seg#3 and seg#6, the seg#1 is responsible to copy data to
