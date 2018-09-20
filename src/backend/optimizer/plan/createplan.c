@@ -6424,8 +6424,6 @@ make_modifytable(PlannerInfo *root, CmdType operation, bool canSetTag,
 	node->action_col_idxes = NIL;
 	node->ctid_col_idxes = NIL;
 	node->oid_col_idxes = NIL;
-	node->oldSegs = 3;
-
 
 	adjust_modifytable_flow(root, node);
 
