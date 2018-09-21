@@ -6,11 +6,10 @@
  * DESCRIPTION
  *
  * 		Each table has a `numsegments` attribute in the
- * 		GP_DISTRIBUTION_POLICY table,  it indicates that the table
- * 		data distributed on the first N segments, In common case,
+ * 		GP_DISTRIBUTION_POLICY table,  it indicates that the table's
+ * 		data is distributed on the first N segments, In common case,
  * 		the `numsegments` equal the total segment count of this
- * 		cluster, that is to say, one table needs to distributed
- * 		the data on all segments.
+ * 		cluster.
  *
  * 		When we add new segments into the cluster, `numsegments` no
  * 		longer equal the actual segment count in the cluster, we
@@ -23,42 +22,27 @@
  * 		reshuffle the table data, There are 3 type tables in the
  * 		Greenplum database, they are reshuffled in different ways.
  *
- * 		For hash distributed table, we want to reshuffle data
- * 		through Update statement, If we update the hash keys of the
- * 		table, it will generate an Plan like that:
+ * 		For hash distributed table, we reshuffle data based on
+ * 		Update statement. Updating the hash keys of the	table
+ *      will generate an Plan like:
  *
  * 			Update
  * 				->Redistributed Motion
  * 					->SplitUpdate
  * 						->SeqScan
  *
- * 		The SplitUpdate will generate two tuples, one is for
- * 		deleting and another one is for inserting,  one make up by
- * 		old values and another on make up by new values, In the
- * 		first time, SplitUpdate return the deleting tuple to the
- * 		Motion node, Motion node will compute the destination
- * 		segment with the old values, so it can be sent to the
- * 		correct destination segment,  Update node can delete the
- * 		tuple in the destination segment, In the second time,
- * 		SplitUpdate return the inserting table to Motion node,
- * 		Motion node will compute the destination segment with
- * 		the new values, so it also can be sent to the correct
- * 		destination segment, then Update node can insert the
- * 		tuple to the destination segment.
+ * 		We can not use this Plan to reshuffle table data directly.
+ * 		The problem is that we need to know the segment count
+ * 		when Motion node computes the destination segment. When
+ * 		we compute the destination segment of deleting tuple, it
+ * 		need the old segment count which is equal `numsegments`;
+ *      on the other hand, we need use the new segment count to
+ *      compute the destination segment for	inserting tuple.
  *
- * 		We can not use this Plan to reshuffle table data directly,
- * 		The problem is that we need to consider the segment count
- * 		when Motion node computing the destination segment. When
- * 		we compute the destination segment of deleting tuple, It
- * 		need use the old segment count which is equal
- * 		`numsegments`, on the other hand, we need use the new
- * 		segment count to compute the destination segment for
- * 		inserting tuple.
- *
- * 		So we can add an new operator Reshuffle to compute the
+ * 		So we have to add an new operator Reshuffle to compute the
  * 		destination segment, it record the O and N (O is the count
  * 		of old segments and N is the count of new segments), then
- * 		the Plan would adjust like that:
+ * 		the Plan would be adjusted like:
  *
  * 			Update
  * 				->Explicit Motion
@@ -95,9 +79,9 @@
  * 		the common update and the reshuffling.
  *
  * 		In conclusion, we reshuffle hash distributed table by
- * 		Reshuffle node and ReshuffleExpr, the ReshuffleExpr filte
+ * 		Reshuffle node and ReshuffleExpr, the ReshuffleExpr filter
  * 		the tuple need to reshuffle and the Reshuffle node do the
- * 		really reshuffling work, we can use that frame work to
+ * 		real reshuffling work, we can use that framework to
  * 		implement reshuffle random distributed table and replicated
  * 		table.
  *
@@ -118,7 +102,7 @@
  * 		for deleting, only return the inserting tuple to motion. Let
  * 		me illustrate this with an example:
  *
- * 		if there are 3 old segments in the cluster and we add 4 new
+ * 		If there are 3 old segments in the cluster and we add 4 new
  * 		segments, the segment ID of old segments is (0,1,2) and the
  * 		segment ID of new segments is (3,4,5,6), when reshuffle the
  * 		replicated table, the seg#0 is responsible to copy data to
@@ -146,6 +130,8 @@
 #include "cdb/cdbhash.h"
 #include "cdb/cdbvars.h"
 #include "cdb/memquota.h"
+
+#define INIT_IDX 1
 
 /*
  *  EvalHashSegID
@@ -229,6 +215,10 @@ ExecReshuffle(ReshuffleState *node)
 
 	Assert(splitUpdate->actionColIdx > 0);
 
+	/* New added segments have no data */
+	if (GpIdentity.segindex >= reshuffle->oldSegs)
+		return NULL;
+
 	if (reshuffle->ptype == POLICYTYPE_PARTITIONED)
 	{
 		slot = ExecProcNode(outerNode);
@@ -263,6 +253,13 @@ ExecReshuffle(ReshuffleState *node)
 				/* For random distributed tables*/
 				int newSegs = getgpsegmentCount();
 				int oldSegs = reshuffle->oldSegs;
+
+				/*
+				 * Tuple with inserting action must be sent to other segments.
+				 * Since the table is distributed randomly, we randomly pick one
+				 * of the new segments[seg_Old, Seg_New) as target with uniform
+				 * probability.
+				 */
 				values[reshuffle->tupleSegIdx - 1] =
 						Int32GetDatum((random() % (newSegs - oldSegs)) + oldSegs);
 			}
@@ -296,8 +293,7 @@ ExecReshuffle(ReshuffleState *node)
 		int segIdx;
 
 		/* For replicated tables*/
-		if (GpIdentity.segindex >= reshuffle->oldSegs ||
-			GpIdentity.segindex + reshuffle->oldSegs >=
+		if (GpIdentity.segindex + reshuffle->oldSegs >=
 			getgpsegmentCount())
 			return NULL;
 
@@ -305,55 +301,50 @@ ExecReshuffle(ReshuffleState *node)
 		 * Each old semgent cound be responsible to copy data to
 		 * more than one new segments
 		 */
-		do {
-			/* To copy data to the first new segments */
-			if (node->prevSegIdx == GpIdentity.segindex)
+		while(1)
+		{
+			if (node->newTargetIdx == INIT_IDX)
 			{
 				slot = ExecProcNode(outerNode);
 				if (TupIsNull(slot))
-				{
 					return NULL;
-				}
 
-				node->prevSlot = slot;
+				/* It seems OK without deep copying the slot*/
+				node->savedSlot = slot;
 			}
 			else
 			{
-				/* It seems OK without deep copying the slot*/
-				slot = node->prevSlot;
+				slot = node->savedSlot;
+				Assert(!TupIsNull(slot));
 			}
-
-			Assert(!TupIsNull(slot));
 
 			slot_getallattrs(slot);
 			values = slot_get_values(slot);
 
 			dmlAction = DatumGetInt32(values[splitUpdate->actionColIdx - 1]);
-
 			Assert(dmlAction == DML_INSERT || dmlAction == DML_DELETE);
 
 			/* Reshuffling replicate table does not need to delete tuple */
 			if (dmlAction == DML_DELETE)
 				continue;
 
-			/* Get the destination segments */
-			segIdx = node->prevSegIdx + reshuffle->oldSegs;
+			/*
+			 * Now we are handling inserting tuples and self_segid < N.
+			 * N old segments(0, 1, 2, ... N-1)
+			 * M new segments(N, N+1, ... N+M-1)
+			 * The algorithm is that self_segid sends to the newsegments with id is
+			 * self_segid + kN(k >= 1)
+			 */
+			segIdx = GpIdentity.segindex + node->newTargetIdx * reshuffle->oldSegs;
 			if (segIdx >= getgpsegmentCount())
 			{
-				/*
-				 * If tuple is copied to all destination segments, we can
-				 * process the next tuple now.
-				 */
-				node->prevSegIdx = GpIdentity.segindex;
-				node->prevSlot = NULL;
+				node->newTargetIdx = INIT_IDX;
 				continue;
 			}
-
-			node->prevSegIdx = segIdx;
+			node->newTargetIdx++;
 			values[reshuffle->tupleSegIdx - 1] = Int32GetDatum(segIdx);
-
 			break;
-		} while (1);
+		}
 	}
 	else
 	{
@@ -424,8 +415,8 @@ ExecInitReshuffle(Reshuffle *node, EState *estate, int eflags)
 #endif
 
 	/* Init the segments id to current segment id */
-	reshufflestate->prevSegIdx = GpIdentity.segindex;
-	reshufflestate->prevSlot = NULL;
+	reshufflestate->newTargetIdx = INIT_IDX;
+	reshufflestate->savedSlot = NULL;
 
 	return reshufflestate;
 }
