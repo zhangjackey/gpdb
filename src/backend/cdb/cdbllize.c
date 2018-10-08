@@ -264,6 +264,7 @@ typedef struct ParallelizeCorrelatedPlanWalkerContext
 								 * gather or broadcast */
 	List	   *rtable;			/* rtable from the global context */
 	bool		subPlanDistributed; /* is original subplan distributed */
+	Flow	   *currentPlanFlow;
 } ParallelizeCorrelatedPlanWalkerContext;
 
 /**
@@ -282,7 +283,7 @@ typedef struct MapVarsMutatorContext
  */
 static bool ContainsParamWalker(Node *expr, void *ctx);
 static void ParallelizeSubplan(SubPlan *spExpr, PlanProfile *context);
-static Plan *ParallelizeCorrelatedSubPlan(PlannerInfo *root, SubPlan *spExpr, Plan *plan, Movement m, bool subPlanDistributed);
+static Plan *ParallelizeCorrelatedSubPlan(PlannerInfo *root, SubPlan *spExpr, Plan *plan, Movement m, bool subPlanDistributed, Flow *currentPlanFlow);
 static Node *MapVarsMutator(Node *expr, MapVarsMutatorContext *ctx);
 static Node *ParallelizeCorrelatedSubPlanMutator(Node *node, ParallelizeCorrelatedPlanWalkerContext *ctx);
 static Node *ParallelizeCorrelatedSubPlanUpdateFlowMutator(Node *node);
@@ -573,7 +574,7 @@ ParallelizeCorrelatedSubPlanMutator(Node *node, ParallelizeCorrelatedPlanWalkerC
 		if (ctx->movement == MOVEMENT_BROADCAST)
 		{
 			broadcastPlan(scanPlan, false /* stable */ , false /* rescannable */,
-						  scanPlan->flow->numsegments /* numsegments */);
+						  ctx->currentPlanFlow->numsegments /* numsegments */);
 		}
 		else
 		{
@@ -664,7 +665,7 @@ ParallelizeCorrelatedSubPlanMutator(Node *node, ParallelizeCorrelatedPlanWalkerC
  * Parallelizes a correlated subplan. See ParallelizeCorrelatedSubPlanMutator for details.
  */
 Plan *
-ParallelizeCorrelatedSubPlan(PlannerInfo *root, SubPlan *spExpr, Plan *plan, Movement m, bool subPlanDistributed)
+ParallelizeCorrelatedSubPlan(PlannerInfo *root, SubPlan *spExpr, Plan *plan, Movement m, bool subPlanDistributed, Flow *currentPlanFlow)
 {
 	ParallelizeCorrelatedPlanWalkerContext ctx;
 
@@ -673,6 +674,7 @@ ParallelizeCorrelatedSubPlan(PlannerInfo *root, SubPlan *spExpr, Plan *plan, Mov
 	ctx.subPlanDistributed = subPlanDistributed;
 	ctx.sp = spExpr;
 	ctx.rtable = root->glob->finalrtable;
+	ctx.currentPlanFlow = currentPlanFlow;
 	return (Plan *) ParallelizeCorrelatedSubPlanMutator((Node *) plan, &ctx);
 
 }
@@ -773,7 +775,7 @@ ParallelizeSubplan(SubPlan *spExpr, PlanProfile *context)
 		 * Subplan corresponds to a correlated subquery and its parallelization
 		 * requires certain transformations.
 		 */
-		newPlan = ParallelizeCorrelatedSubPlan(context->root, spExpr, newPlan, reqMove, subPlanDistributed);
+		newPlan = ParallelizeCorrelatedSubPlan(context->root, spExpr, newPlan, reqMove, subPlanDistributed, context->currentPlanFlow);
 	}
 
 	Assert(newPlan);
