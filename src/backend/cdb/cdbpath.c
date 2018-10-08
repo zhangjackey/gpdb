@@ -1360,6 +1360,11 @@ cdbpath_motion_for_join(PlannerInfo *root,
 		if (large_rel->bytes < small_rel->bytes)
 			CdbSwap(CdbpathMfjRel *, large_rel, small_rel);
 
+		/* Both side are distribued in 1 segment, it can join without motion. */
+		if (CdbPathLocus_NumSegments(large_rel->locus) == 1 &&
+			CdbPathLocus_NumSegments(small_rel->locus) == 1)
+			return large_rel->locus;
+
 		/* If joining on larger rel's partitioning key, redistribute smaller. */
 		if (!small_rel->require_existing_order &&
 			cdbpath_match_preds_to_partkey(root,
@@ -1413,7 +1418,6 @@ cdbpath_motion_for_join(PlannerInfo *root,
 				  small_rel->bytes + large_rel->bytes))
 			CdbPathLocus_MakeReplicated(&small_rel->move_to,
 										CdbPathLocus_NumSegments(large_rel->locus));
-
 		/* Replicate largeer rel if cheaper than redistributing both rels. */
 		else if (!large_rel->require_existing_order &&
 				 large_rel->ok_to_replicate &&
