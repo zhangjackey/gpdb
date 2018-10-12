@@ -809,6 +809,14 @@ ldelete:;
 					ereport(ERROR,
 							(errcode(ERRCODE_T_R_SERIALIZATION_FAILURE),
 							 errmsg("could not serialize access due to concurrent update")));
+
+				if (isUpdate)
+				{
+					ereport(ERROR,
+							(errcode(ERRCODE_IN_FAILED_SQL_TRANSACTION ),
+							 errmsg("concurrent updates distribution keys on the same row is not allowed")));
+				}
+
 				if (!ItemPointerEquals(tupleid, &hufd.ctid))
 				{
 					TupleTableSlot *epqslot;
