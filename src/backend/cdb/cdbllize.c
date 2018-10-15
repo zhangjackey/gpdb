@@ -573,6 +573,7 @@ ParallelizeCorrelatedSubPlanMutator(Node *node, ParallelizeCorrelatedPlanWalkerC
 		 */
 		if (ctx->movement == MOVEMENT_BROADCAST)
 		{
+			Assert (NULL != ctx->currentPlanFlow);
 			broadcastPlan(scanPlan, false /* stable */ , false /* rescannable */,
 						  ctx->currentPlanFlow->numsegments /* numsegments */);
 		}
@@ -740,6 +741,7 @@ ParallelizeSubplan(SubPlan *spExpr, PlanProfile *context)
 
 		if (containingPlanDistributed)
 		{
+			Assert(NULL != context->currentPlanFlow);
 			broadcastPlan(newPlan, false /* stable */ , false /* rescannable */,
 						  context->currentPlanFlow->numsegments /* numsegments */);
 		}
