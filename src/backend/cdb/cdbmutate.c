@@ -111,6 +111,7 @@ static AttrNumber find_segid_column(List *tlist, Index relid);
 static bool replace_shareinput_targetlists_walker(Node *node, PlannerInfo *root, bool fPop);
 
 static bool fixup_subplan_walker(Node *node, SubPlanWalkerContext *context);
+static void find_junk_tle(List *targetList, const char *junkAttrName, TargetEntry **targetEntry);
 
 /*
  * Is target list of a Result node all-constant?
@@ -789,7 +790,9 @@ apply_motion_mutator(Node *node, ApplyMotionState *context)
 			 * add an ExplicitRedistribute motion node only if child plan
 			 * nodes have a motion node
 			 */
-			if (context->containMotionNodes)
+			if (context->containMotionNodes ||
+                (IsA(plan, Reshuffle) &&
+                 ((Reshuffle*)plan)->oldSegs != getgpsegmentCount()))
 			{
 				/*
 				 * motion node in child nodes: add a ExplicitRedistribute
@@ -1508,9 +1511,7 @@ copy_junk_attributes(List *src, List **dest, AttrNumber startAttrIdx)
 
 		var = copyObject(((TargetEntry *) lfirst(lct))->expr);
 		var->varno = OUTER_VAR;
-		var->varnoold = OUTER_VAR;
 		var->varattno = ((TargetEntry *) lfirst(lct))->resno;
-		var->varoattno = ((TargetEntry *) lfirst(lct))->resno;
 
 		newTargetEntry = makeTargetEntry((Expr *) var, startAttrIdx + 1, ((TargetEntry *) lfirst(lct))->resname,
 										 true);
@@ -1789,8 +1790,50 @@ make_splitupdate(PlannerInfo *root, ModifyTable *mt, Plan *subplan, RangeTblEntr
 	mt->ctid_col_idxes = lappend_int(mt->ctid_col_idxes, ctidColIdx);
 	mt->oid_col_idxes = lappend_int(mt->oid_col_idxes, oidColIdx);
 
+
+
 	return splitupdate;
 }
+
+Reshuffle *
+make_reshuffle(PlannerInfo *root,
+			   Plan *subplan,
+			   RangeTblEntry *rte,
+			   Index resultRelationsIdx)
+{
+	Reshuffle *reshufflePlan = makeNode(Reshuffle);
+	Relation rel = relation_open(rte->relid, NoLock);
+	GpPolicy *policy = rel->rd_cdbpolicy;
+	int i = 0;
+
+	reshufflePlan->plan.targetlist = list_copy(subplan->targetlist);
+	reshufflePlan->plan.lefttree = subplan;
+
+	reshufflePlan->plan.startup_cost = subplan->startup_cost;
+	reshufflePlan->plan.total_cost = subplan->total_cost;
+	reshufflePlan->plan.plan_rows = subplan->plan_rows;
+	reshufflePlan->plan.plan_width = subplan->plan_width;
+	reshufflePlan->oldSegs = policy->numsegments;
+	reshufflePlan->tupleSegIdx =
+			find_segid_column(reshufflePlan->plan.targetlist,
+							  resultRelationsIdx);
+
+	for(i = 0; i < policy->nattrs; i++)
+	{
+		reshufflePlan->policyAttrs = lappend_int(reshufflePlan->policyAttrs,
+												 policy->attrs[i]);
+	}
+
+	reshufflePlan->ptype = policy->ptype;
+
+	/* FIXME: pass old or new cluster size to numsegments? */
+	mark_plan_strewn((Plan *) reshufflePlan, GP_POLICY_ALL_NUMSEGMENTS);
+
+	heap_close(rel, NoLock);
+
+	return reshufflePlan;
+}
+
 
 /*
  * Find the index of the segid column of the requested relation (relid) in the

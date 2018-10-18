@@ -1345,6 +1345,15 @@ typedef struct CoerceToDomainState
 	List	   *constraints;	/* list of DomainConstraintState nodes */
 } CoerceToDomainState;
 
+typedef struct ReshuffleExprState
+{
+       ExprState xprstate;
+       ExprState  *arg;
+       List *hashKeys;
+       List *hashTypes;
+}ReshuffleExprState;
+
+
 /*
  * DomainConstraintState - one item to check during CoerceToDomain
  *
@@ -2976,5 +2985,13 @@ typedef struct PartitionSelectorState
 	TupleTableSlot *partTabSlot;
 	ProjectionInfo *partTabProj;
 } PartitionSelectorState;
+
+typedef struct ReshuffleState
+{
+	PlanState ps;
+	List* destList;
+	int newTargetIdx;
+	TupleTableSlot *savedSlot;
+} ReshuffleState;
 
 #endif   /* EXECNODES_H */

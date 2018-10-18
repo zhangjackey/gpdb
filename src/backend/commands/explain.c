@@ -1457,6 +1457,9 @@ ExplainNode(PlanState *planstate, List *ancestors,
 		case T_SplitUpdate:
 			pname = sname = "Split";
 			break;
+		case T_Reshuffle:
+			pname = "Reshuffle";
+			break;
 		case T_AssertOp:
 			pname = sname = "Assert";
 			break;

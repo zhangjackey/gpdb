@@ -6724,6 +6724,7 @@ adjust_modifytable_flow(PlannerInfo *root, ModifyTable *node)
 			RangeTblEntry *rte = rt_fetch(rti, root->parse->rtable);
 			GpPolicy   *targetPolicy;
 			GpPolicyType targetPolicyType;
+			Query *qry = root->parse;
 
 			Assert(rti > 0);
 			Assert(rte->rtekind == RTE_RELATION);
@@ -6748,14 +6749,19 @@ adjust_modifytable_flow(PlannerInfo *root, ModifyTable *node)
 				all_subplans_replicated = false;
 
 				/*
-				 * The planner does not support updating any of the
-				 * partitioning columns.
+				 * If we update the hash keys of hash distributed table
+				 * or need reshuffle data for a random distributed table,
 				 */
 				if (node->operation == CMD_UPDATE &&
-					isAnyColChangedByUpdate(root, rti, rte,
+						/* update hash keys */
+						(targetPolicy->nattrs > 0 &&
+						 isAnyColChangedByUpdate(root, rti, rte,
 											subplan->targetlist,
 											targetPolicy->nattrs,
-											targetPolicy->attrs))
+											targetPolicy->attrs)) ||
+						/* for randomly table*/
+						(targetPolicy->nattrs == 0 &&
+						 qry->reshuffle))
 				{
 					List	   *hashExpr;
 					Plan	*new_subplan;
@@ -6768,18 +6774,33 @@ adjust_modifytable_flow(PlannerInfo *root, ModifyTable *node)
 					}
 
 					new_subplan = (Plan *) make_splitupdate(root, (ModifyTable *) node, subplan, rte, rti);
-					hashExpr = getExprListFromTargetList(new_subplan->targetlist,
-														 targetPolicy->nattrs,
-														 targetPolicy->attrs,
-														 false);
-					if (!repartitionPlan(new_subplan, false, false, hashExpr,
-										 targetPolicy->numsegments))
-						ereport(ERROR, (errcode(ERRCODE_GP_FEATURE_NOT_YET),
-										errmsg("Cannot parallelize that UPDATE yet")));
 
+					/*
+					 * if need reshuffle, add the Reshuffle node onto the
+					 * SplitUpdate node and Specify the explicit motion
+					 */
+                    if(qry->reshuffle)
+					{
+						new_subplan = (Plan *) make_reshuffle(root, new_subplan, rte, rti);
+						request_explicit_motion(new_subplan, rti, root->glob->finalrtable);
+					}
+					else
+					{
+						/* Only update hash keys and do not need reshuffle */
+						hashExpr = getExprListFromTargetList(new_subplan->targetlist,
+															 targetPolicy->nattrs,
+															 targetPolicy->attrs,
+															 false);
+						if (!repartitionPlan(new_subplan, false, false, hashExpr,
+											 targetPolicy->numsegments))
+							ereport(ERROR, (errcode(ERRCODE_GP_FEATURE_NOT_YET),
+											errmsg("Cannot parallelize that UPDATE yet")));
+					}
 					lcp->data.ptr_value = new_subplan;
+
 					continue;
 				}
+
 				node->action_col_idxes = lappend_int(node->action_col_idxes, -1);
 				node->ctid_col_idxes = lappend_int(node->ctid_col_idxes, -1);
 				node->oid_col_idxes = lappend_int(node->oid_col_idxes, 0);
@@ -6826,6 +6847,19 @@ adjust_modifytable_flow(PlannerInfo *root, ModifyTable *node)
 			}
 			else if (targetPolicyType == POLICYTYPE_REPLICATED)
 			{
+				if (node->operation == CMD_UPDATE &&
+					qry->reshuffle)
+				{
+					Plan	*new_subplan;
+
+					new_subplan = (Plan *) make_splitupdate(root, (ModifyTable *) node, subplan, rte, rti);
+					new_subplan = (Plan *) make_reshuffle(root, new_subplan, rte, rti);
+					request_explicit_motion(new_subplan, rti, root->glob->finalrtable);
+
+					lcp->data.ptr_value = new_subplan;
+
+					continue;
+				}
 				node->action_col_idxes = lappend_int(node->action_col_idxes, -1);
 				node->ctid_col_idxes = lappend_int(node->ctid_col_idxes, -1);
 				node->oid_col_idxes = lappend_int(node->oid_col_idxes, 0);

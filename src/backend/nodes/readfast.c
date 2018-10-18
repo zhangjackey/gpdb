@@ -255,6 +255,7 @@ _readQuery(void)
 	READ_NODE_FIELD(setOperations);
 	READ_NODE_FIELD(constraintDeps);
 	READ_BOOL_FIELD(isCTAS);
+	READ_BOOL_FIELD(reshuffle);
 
 	/* policy not serialized */
 
@@ -701,6 +702,7 @@ _readUpdateStmt(void)
 	READ_NODE_FIELD(fromClause);
 	READ_NODE_FIELD(returningList);
 	READ_NODE_FIELD(withClause);
+	READ_BOOL_FIELD(reshuffle);
 	READ_DONE();
 }
 
@@ -2294,6 +2296,23 @@ _readSplitUpdate(void)
 }
 
 /*
+ * _readReshuffle
+ */
+static Reshuffle *
+_readReshuffle(void)
+{
+	READ_LOCALS(Reshuffle);
+
+	READ_INT_FIELD(tupleSegIdx);
+	READ_NODE_FIELD(policyAttrs);
+	READ_INT_FIELD(oldSegs);
+	READ_INT_FIELD(ptype);
+	readPlanInfo((Plan *)local_node);
+
+	READ_DONE();
+}
+
+/*
  * _readRowTrigger
  */
 static RowTrigger *
@@ -2893,6 +2912,19 @@ _readLockRows(void)
 	READ_DONE();
 }
 
+static ReshuffleExpr *
+_readReshuffleExprfFast(void)
+{
+	READ_LOCALS(ReshuffleExpr);
+
+	READ_INT_FIELD(newSegs);
+	READ_INT_FIELD(oldSegs);
+	READ_NODE_FIELD(hashKeys);
+	READ_NODE_FIELD(hashTypes);
+	READ_INT_FIELD(ptype);
+	READ_DONE();
+}
+
 
 static Node *
 _readValue(NodeTag nt)
@@ -3179,6 +3211,9 @@ readNodeBinary(void)
 				break;
 			case T_SplitUpdate:
 				return_value = _readSplitUpdate();
+				break;
+			case T_Reshuffle:
+				return_value = _readReshuffle();
 				break;
 			case T_RowTrigger:
 				return_value = _readRowTrigger();
@@ -3819,7 +3854,9 @@ readNodeBinary(void)
 			case T_DistributedBy:
 				return_value = _readDistributedBy();
 				break;
-
+			case T_ReshuffleExpr:
+				return_value = _readReshuffleExprfFast();
+				break;
 
 			default:
 				return_value = NULL; /* keep the compiler silent */

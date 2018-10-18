@@ -906,6 +906,7 @@ _outQuery(StringInfo str, Query *node)
 	WRITE_NODE_FIELD(setOperations);
 	WRITE_NODE_FIELD(constraintDeps);
 	WRITE_BOOL_FIELD(isCTAS);
+	WRITE_BOOL_FIELD(reshuffle);
 
 	/* Don't serialize policy */
 }
@@ -1286,6 +1287,18 @@ _outAlterTableSpaceOptionsStmt(StringInfo str, AlterTableSpaceOptionsStmt *node)
 	WRITE_BOOL_FIELD(isReset);
 }
 
+static void
+_outReshuffleExprFast(StringInfo str, ReshuffleExpr *node)
+{
+	WRITE_NODE_TYPE("RESHUFFLEEXPR");
+
+	WRITE_INT_FIELD(newSegs);
+	WRITE_INT_FIELD(oldSegs);
+	WRITE_NODE_FIELD(hashKeys);
+	WRITE_NODE_FIELD(hashTypes);
+	WRITE_INT_FIELD(ptype);
+}
+
 /*
  * _outNode -
  *	  converts a Node into binary string and append it to 'str'
@@ -1467,6 +1480,9 @@ _outNode(StringInfo str, void *obj)
 				break;
 			case T_SplitUpdate:
 				_outSplitUpdate(str, obj);
+				break;
+			case T_Reshuffle:
+				_outReshuffle(str, obj);
 				break;
 			case T_RowTrigger:
 				_outRowTrigger(str, obj);
@@ -2220,6 +2236,9 @@ _outNode(StringInfo str, void *obj)
 				break;
 			case T_AlterTableSpaceOptionsStmt:
 				_outAlterTableSpaceOptionsStmt(str, obj);
+				break;
+			case T_ReshuffleExpr:
+                _outReshuffleExprFast(str, obj);
 				break;
 			default:
 				elog(ERROR, "could not serialize unrecognized node type: %d",
