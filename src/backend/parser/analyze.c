@@ -3051,6 +3051,8 @@ transformUpdateStmt(ParseState *pstate, UpdateStmt *stmt)
 
 	assign_query_collations(pstate, qry);
 
+	qry->reshuffle = stmt->reshuffle;
+
 	return qry;
 }
 
