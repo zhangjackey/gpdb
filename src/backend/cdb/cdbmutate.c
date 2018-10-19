@@ -790,9 +790,7 @@ apply_motion_mutator(Node *node, ApplyMotionState *context)
 			 * add an ExplicitRedistribute motion node only if child plan
 			 * nodes have a motion node
 			 */
-			if (context->containMotionNodes ||
-                (IsA(plan, Reshuffle) &&
-                 ((Reshuffle*)plan)->oldSegs != getgpsegmentCount()))
+			if (context->containMotionNodes || IsA(plan, Reshuffle))
 			{
 				/*
 				 * motion node in child nodes: add a ExplicitRedistribute
@@ -1790,8 +1788,6 @@ make_splitupdate(PlannerInfo *root, ModifyTable *mt, Plan *subplan, RangeTblEntr
 	mt->ctid_col_idxes = lappend_int(mt->ctid_col_idxes, ctidColIdx);
 	mt->oid_col_idxes = lappend_int(mt->oid_col_idxes, oidColIdx);
 
-
-
 	return splitupdate;
 }
 
@@ -1801,10 +1797,10 @@ make_reshuffle(PlannerInfo *root,
 			   RangeTblEntry *rte,
 			   Index resultRelationsIdx)
 {
-	Reshuffle *reshufflePlan = makeNode(Reshuffle);
-	Relation rel = relation_open(rte->relid, NoLock);
-	GpPolicy *policy = rel->rd_cdbpolicy;
-	int i = 0;
+	Reshuffle 	*reshufflePlan = makeNode(Reshuffle);
+	Relation 	rel = relation_open(rte->relid, NoLock);
+	GpPolicy 	*policy = rel->rd_cdbpolicy;
+	int 		i;
 
 	reshufflePlan->plan.targetlist = list_copy(subplan->targetlist);
 	reshufflePlan->plan.lefttree = subplan;
@@ -1815,8 +1811,8 @@ make_reshuffle(PlannerInfo *root,
 	reshufflePlan->plan.plan_width = subplan->plan_width;
 	reshufflePlan->oldSegs = policy->numsegments;
 	reshufflePlan->tupleSegIdx =
-			find_segid_column(reshufflePlan->plan.targetlist,
-							  resultRelationsIdx);
+		find_segid_column(reshufflePlan->plan.targetlist,
+						  resultRelationsIdx);
 
 	for(i = 0; i < policy->nattrs; i++)
 	{

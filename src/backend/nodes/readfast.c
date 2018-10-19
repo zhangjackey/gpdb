@@ -255,7 +255,7 @@ _readQuery(void)
 	READ_NODE_FIELD(setOperations);
 	READ_NODE_FIELD(constraintDeps);
 	READ_BOOL_FIELD(isCTAS);
-	READ_BOOL_FIELD(reshuffle);
+	READ_BOOL_FIELD(needReshuffle);
 
 	/* policy not serialized */
 
@@ -702,7 +702,7 @@ _readUpdateStmt(void)
 	READ_NODE_FIELD(fromClause);
 	READ_NODE_FIELD(returningList);
 	READ_NODE_FIELD(withClause);
-	READ_BOOL_FIELD(reshuffle);
+	READ_BOOL_FIELD(needReshuffle);
 	READ_DONE();
 }
 

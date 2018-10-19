@@ -61,6 +61,7 @@
 #include "cdb/cdbappendonlyxlog.h"
 #include "cdb/cdbaocsam.h"
 #include "cdb/cdbpartition.h"
+#include "cdb/memquota.h"
 #include "commands/cluster.h"
 #include "commands/copy.h"
 #include "commands/comment.h"
@@ -93,6 +94,7 @@
 #include "parser/parse_type.h"
 #include "parser/parse_utilcmd.h"
 #include "parser/parser.h"
+#include "postmaster/autostats.h"
 #include "rewrite/rewriteDefine.h"
 #include "rewrite/rewriteHandler.h"
 #include "rewrite/rewriteManip.h"
@@ -14098,25 +14100,27 @@ static void
 ReshuffleRelationData(Relation rel)
 {
 	/* construct a update stmt with reshuffle flag */
-	char *prelname;
-	char *namespace_name;
-	RangeVar *relation;
-	UpdateStmt *stmt = makeNode(UpdateStmt);
-	ReshuffleExpr *reshuffleExpr = makeNode(ReshuffleExpr);
-	GpPolicy *policy = rel->rd_cdbpolicy;
-	int	i;
-	Query *q;
-	List *rewritten;
-	DestReceiver *dest;
-	QueryDesc  *queryDesc;
-	PlannedStmt *planned_stmt;
+	char				*prelname;
+	char				*namespace_name;
+	RangeVar			*relation;
+	UpdateStmt			*stmt = makeNode(UpdateStmt);
+	ReshuffleExpr		*reshuffleExpr = makeNode(ReshuffleExpr);
+	GpPolicy 			*policy = rel->rd_cdbpolicy;
+	int					i;
+	Query 				*q;
+	List 				*rewritten;
+	DestReceiver 		*dest;
+	QueryDesc  			*queryDesc;
+	PlannedStmt 		*planned_stmt;
+	Oid					relationOid = InvalidOid;
+	AutoStatsCmdType 	cmdType = AUTOSTATS_CMDTYPE_SENTINEL;
 
-	if (policy->numsegments == getgpsegmentCount())
+	if (policy->numsegments >= getgpsegmentCount())
 		ereport(ERROR,
 				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
 						errmsg("Do not need to reshuffle")));
 
-	stmt->reshuffle = true;
+	stmt->needReshuffle = true;
 	stmt->targetList = NIL;
 
 	/* make an RangeVar to indicate the result relation */
@@ -14188,13 +14192,29 @@ ReshuffleRelationData(Relation rel)
 								GetActiveSnapshot(), InvalidSnapshot,
 								dest, NULL, INSTRUMENT_NONE);
 
-	/* Step (c) - run on all nodes */
+	queryDesc->plannedstmt->query_mem =
+			ResourceManagerGetQueryMemoryLimit(queryDesc->plannedstmt);
+
+	/* run on all nodes */
 	ExecutorStart(queryDesc, 0);
 
 	ExecutorRun(queryDesc, ForwardScanDirection, 0L);
+
+	if (Gp_role == GP_ROLE_DISPATCH)
+		autostats_get_cmdtype(queryDesc, &cmdType, &relationOid);
+
 	ExecutorFinish(queryDesc);
 	ExecutorEnd(queryDesc);
+
+	/* Running auto_stats */
+	if (Gp_role == GP_ROLE_DISPATCH)
+		auto_stats(cmdType,
+				   relationOid,
+				   queryDesc->es_processed,
+				   false);
+
 	FreeQueryDesc(queryDesc);
+	PopActiveSnapshot();
 
 	return;
 }
@@ -14229,10 +14249,12 @@ ATExecSetDistributedBy(Relation rel, Node *node, AlterTableCmd *cmd)
 	char        relstorage = RELSTORAGE_HEAP;
 	int         nattr; /* number of attributes */
 	int			numsegments;
-	bool useExistingColumnAttributes = true;
+	bool				useExistingColumnAttributes = true;
 	SetDistributionCmd *qe_data = NULL; 
-	bool save_optimizer_replicated_table_insert;
-	int save_gp_singleton_segindex;
+	bool 				save_optimizer_replicated_table_insert;
+	int 				save_gp_singleton_segindex;
+	Oid					relationOid = InvalidOid;
+	AutoStatsCmdType 	cmdType = AUTOSTATS_CMDTYPE_SENTINEL;
 
 	/* Permissions checks */
 	if (!pg_class_ownercheck(RelationGetRelid(rel), GetUserId()))
@@ -14314,9 +14336,6 @@ ATExecSetDistributedBy(Relation rel, Node *node, AlterTableCmd *cmd)
 					GpPolicyReplace(RelationGetRelid(rel), newPolicy);
 					rel->rd_cdbpolicy =
 							GpPolicyCopy(GetMemoryChunkContext(rel), newPolicy);
-
-					/* Restore the old snapshot */
-					PopActiveSnapshot();
 
 					heap_close(rel, NoLock);
 
@@ -14734,11 +14753,26 @@ ATExecSetDistributedBy(Relation rel, Node *node, AlterTableCmd *cmd)
 		/* Step (c) - run on all nodes */
 		queryDesc->ddesc = makeNode(QueryDispatchDesc);
 		queryDesc->ddesc->useChangedAOOpts = false;
+
+		queryDesc->plannedstmt->query_mem =
+				ResourceManagerGetQueryMemoryLimit(queryDesc->plannedstmt);
+
 		ExecutorStart(queryDesc, 0);
 		ExecutorRun(queryDesc, ForwardScanDirection, 0L);
+
+		if (Gp_role == GP_ROLE_DISPATCH)
+			autostats_get_cmdtype(queryDesc, &cmdType, &relationOid);
+
 		queryDesc->dest->rDestroy(queryDesc->dest);
 		ExecutorFinish(queryDesc);
 		ExecutorEnd(queryDesc);
+
+		if (Gp_role == GP_ROLE_DISPATCH)
+			auto_stats(cmdType,
+					   relationOid,
+					   queryDesc->es_processed,
+					   false);
+
 		FreeQueryDesc(queryDesc);
 
 		/* Restore the old snapshot */

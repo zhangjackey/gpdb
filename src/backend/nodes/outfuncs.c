@@ -3442,7 +3442,7 @@ _outUpdateStmt(StringInfo str, const UpdateStmt *node)
 	WRITE_NODE_FIELD(fromClause);
 	WRITE_NODE_FIELD(returningList);
 	WRITE_NODE_FIELD(withClause);
-	WRITE_BOOL_FIELD(reshuffle);
+	WRITE_BOOL_FIELD(needReshuffle);
 }
 
 static void
@@ -3774,7 +3774,7 @@ _outQuery(StringInfo str, const Query *node)
 	WRITE_NODE_FIELD(setOperations);
 	WRITE_NODE_FIELD(constraintDeps);
 	WRITE_BOOL_FIELD(isCTAS);
-	WRITE_BOOL_FIELD(reshuffle);
+	WRITE_BOOL_FIELD(needReshuffle);
 
 	/* Don't serialize policy */
 }

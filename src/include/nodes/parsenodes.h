@@ -192,7 +192,7 @@ typedef struct Query
 	 *  to reshuffle table data, so we should to know if the
 	 *  UpdateStmt is used to reshuffle or to update.
 	 */
-	bool	   reshuffle;
+	bool	   needReshuffle;
 
 } Query;
 
@@ -1118,7 +1118,12 @@ typedef struct UpdateStmt
 	List	   *fromClause;		/* optional from clause for more tables */
 	List	   *returningList;	/* list of expressions to return */
 	WithClause *withClause;		/* WITH clause */
-	bool	    reshuffle;
+
+	/*
+	 *  Do we need to reshuffle data, we should to know if the
+	 *  UpdateStmt is used to reshuffle or to update.
+	 */
+	bool	    needReshuffle;
 } UpdateStmt;
 
 /* ----------------------

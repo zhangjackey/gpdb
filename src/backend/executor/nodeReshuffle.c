@@ -110,10 +110,8 @@
  * 		seg#4, the seg#2 is responsible to copy data to seg#5.
  *
  *
- * Portions Copyright (c) 2005-2018, Greenplum inc.
+ * Portions Copyright (c) 2012, EMC Corp.
  * Portions Copyright (c) 2012-Present Pivotal Software, Inc.
- * Portions Copyright (c) 1996-2011, PostgreSQL Global Development Group
- * Portions Copyright (c) 1994, Regents of the University of California
  *
  * IDENTIFICATION
  *	  src/backend/executor/nodeReshuffle.c
@@ -368,7 +366,7 @@ ExecInitReshuffle(Reshuffle *node, EState *estate, int eflags) {
 	TupleDesc tupDesc;
 
 	/* check for unsupported flags */
-	Assert(!(eflags & (EXEC_FLAG_MARK | EXEC_FLAG_BACKWARD)) ||
+	Assert(!(eflags & (EXEC_FLAG_REWIND | EXEC_FLAG_MARK | EXEC_FLAG_BACKWARD)) ||
 		   outerPlan(node) != NULL);
 
 	/*
