@@ -23,7 +23,7 @@
 #include "nodes/pg_list.h"
 #include "nodes/params.h"  /* For ParamListInfoData */
 #include "cdb/cdbpathlocus.h" /* For CdbLocusType */
-#include "catalog/gp_policy.h"
+#include "catalog/gp_policy.h" /* For ReshuffleExpr */
 
 
 /* ----------------------------------------------------------------

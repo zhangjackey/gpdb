@@ -1311,6 +1311,10 @@ typedef struct SplitUpdate
 	List		*deleteColIdx;		/* list of columns to DELETE into the target list */
 } SplitUpdate;
 
+/*
+ * Reshuffle Node
+ * More details please read the description in the nodeReshuffle.c
+ */
 typedef struct Reshuffle
 {
 	Plan plan;

@@ -167,5 +167,4 @@ test: returning
 # GPDB.
 #test: stats
 
-test: reshuffle
-test: reshuffle_ao
+test: reshuffle reshuffle_ao reshuffle_aoco

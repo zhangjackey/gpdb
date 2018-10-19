@@ -403,7 +403,7 @@ _readQuery(void)
 	READ_NODE_FIELD(setOperations);
 	READ_NODE_FIELD(constraintDeps);
 	READ_BOOL_FIELD(isCTAS);
-	READ_BOOL_FIELD(reshuffle);
+	READ_BOOL_FIELD(needReshuffle);
 
 	local_node->intoPolicy = NULL;
 

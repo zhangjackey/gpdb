@@ -3169,7 +3169,7 @@ _copyQuery(const Query *from)
 	COPY_NODE_FIELD(constraintDeps);
 	COPY_NODE_FIELD(intoPolicy);
 	COPY_SCALAR_FIELD(isCTAS);
-	COPY_SCALAR_FIELD(reshuffle);
+	COPY_SCALAR_FIELD(needReshuffle);
 
 	return newnode;
 }
@@ -3213,7 +3213,7 @@ _copyUpdateStmt(const UpdateStmt *from)
 	COPY_NODE_FIELD(fromClause);
 	COPY_NODE_FIELD(returningList);
 	COPY_NODE_FIELD(withClause);
-	COPY_SCALAR_FIELD(reshuffle);
+	COPY_SCALAR_FIELD(needReshuffle);
 
 	return newnode;
 }

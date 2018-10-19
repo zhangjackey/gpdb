@@ -931,7 +931,7 @@ _equalQuery(const Query *a, const Query *b)
 		return false;
 
 	COMPARE_SCALAR_FIELD(isCTAS);
-	COMPARE_SCALAR_FIELD(reshuffle);
+	COMPARE_SCALAR_FIELD(needReshuffle);
 
 	return true;
 }
@@ -969,7 +969,7 @@ _equalUpdateStmt(const UpdateStmt *a, const UpdateStmt *b)
 	COMPARE_NODE_FIELD(fromClause);
 	COMPARE_NODE_FIELD(returningList);
 	COMPARE_NODE_FIELD(withClause);
-	COMPARE_SCALAR_FIELD(reshuffle);
+	COMPARE_SCALAR_FIELD(needReshuffle);
 
 	return true;
 }

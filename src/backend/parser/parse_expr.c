@@ -423,6 +423,13 @@ transformExprRecurse(ParseState *pstate, Node *expr)
 				relid = pstate->p_target_rangetblentry->relid;
 
 				policy = GpPolicyFetch(CurrentMemoryContext, relid);
+
+				/*
+				 * Now we can assume that the relation was locked because
+				 * this expression only used in the Alter table statement.
+				 * ReshuffleExpr is an internal expression which users can
+				 * not use it directly, so NoLock seems good now.
+				 */
 				rel = heap_open(relid, NoLock);
 				desc = rel->rd_att;
 

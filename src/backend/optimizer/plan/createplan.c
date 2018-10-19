@@ -6775,7 +6775,7 @@ adjust_modifytable_flow(PlannerInfo *root, ModifyTable *node, List *is_split_upd
 					 * if need reshuffle, add the Reshuffle node onto the
 					 * SplitUpdate node and Specify the explicit motion
 					 */
-                    if(qry->reshuffle)
+                    if(qry->needReshuffle)
 					{
 						new_subplan = (Plan *) make_reshuffle(root, new_subplan, rte, rti);
 						request_explicit_motion(new_subplan, rti, root->glob->finalrtable);
@@ -6844,7 +6844,7 @@ adjust_modifytable_flow(PlannerInfo *root, ModifyTable *node, List *is_split_upd
 			else if (targetPolicyType == POLICYTYPE_REPLICATED)
 			{
 				if (node->operation == CMD_UPDATE &&
-					qry->reshuffle)
+					qry->needReshuffle)
 				{
 					Plan	*new_subplan;
 
