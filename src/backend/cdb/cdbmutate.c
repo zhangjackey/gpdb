@@ -109,7 +109,7 @@ static Node *apply_motion_mutator(Node *node, ApplyMotionState *context);
 static bool replace_shareinput_targetlists_walker(Node *node, PlannerInfo *root, bool fPop);
 
 static bool fixup_subplan_walker(Node *node, SubPlanWalkerContext *context);
-static void find_junk_tle(List *targetList, const char *junkAttrName, TargetEntry **targetEntry);
+static AttrNumber find_segid_column(List *tlist, Index relid);
 
 /*
  * Is target list of a Result node all-constant?

@@ -14482,7 +14482,7 @@ ReshuffleRelationData(Relation rel)
 
 	q = parse_analyze((Node *) stmt, reshuffle_sql, NULL, 0);
 
-	AcquireRewriteLocks(q, false);
+	AcquireRewriteLocks(q, true, false);
 
 	/* Rewrite through rule system */
 	rewritten = QueryRewrite(q);

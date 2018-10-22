@@ -6754,7 +6754,7 @@ adjust_modifytable_flow(PlannerInfo *root, ModifyTable *node, List *is_split_upd
 				 * exclusion, we can skip it.
 				 */
 				if ((is_split_update ||
-					 (targetPolicy->nattrs == 0 && qry->reshuffle)) && 
+					 (targetPolicy->nattrs == 0 && qry->needReshuffle)) &&
 					 !is_dummy_plan(subplan))
 				{
 					List	   *hashExpr;
@@ -6769,7 +6769,7 @@ adjust_modifytable_flow(PlannerInfo *root, ModifyTable *node, List *is_split_upd
 								 errmsg("Cannot update distribution key columns in utility mode")));
 					}
 
-					new_subplan = (Plan *) make_splitupdate(root, (ModifyTable *) node, subplan, rte, rti);
+					new_subplan = (Plan *) make_splitupdate(root, (ModifyTable *) node, subplan, rte);
 
 					/*
 					 * if need reshuffle, add the Reshuffle node onto the
@@ -6848,7 +6848,7 @@ adjust_modifytable_flow(PlannerInfo *root, ModifyTable *node, List *is_split_upd
 				{
 					Plan	*new_subplan;
 
-					new_subplan = (Plan *) make_splitupdate(root, (ModifyTable *) node, subplan, rte, rti);
+					new_subplan = (Plan *) make_splitupdate(root, (ModifyTable *) node, subplan, rte);
 					new_subplan = (Plan *) make_reshuffle(root, new_subplan, rte, rti);
 					request_explicit_motion(new_subplan, rti, root->glob->finalrtable);
 
