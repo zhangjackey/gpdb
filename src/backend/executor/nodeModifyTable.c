@@ -1594,6 +1594,8 @@ ExecModifyTable(ModifyTableState *node)
 	/*
 	 * Prevent replicated tables being updated on segments outside
 	 * the [0, numsegments-1] range.
+	 *
+	 * FIXME: This piece of code maybe remove once we adjusted the gang size
 	 */
 	if (Gp_role == GP_ROLE_EXECUTE &&
 		!mt->isReshuffle &&
