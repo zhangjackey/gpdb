@@ -1549,6 +1549,7 @@ ExecModifyTable(ModifyTableState *node)
 	ItemPointerData tuple_ctid;
 	HeapTupleData oldtupdata;
 	HeapTuple	oldtuple;
+	ModifyTable *mt = (ModifyTable *) node->ps.plan;
 
 	/*
 	 * This should NOT get called during EvalPlanQual; we should have passed a
@@ -1593,10 +1594,9 @@ ExecModifyTable(ModifyTableState *node)
 	/*
 	 * Prevent replicated tables being updated on segments outside
 	 * the [0, numsegments-1] range.
-	 *
-	 * FIXME: remove this once the flexible gang size feature is ready.
 	 */
 	if (Gp_role == GP_ROLE_EXECUTE &&
+		!mt->isReshuffle &&
 		resultRelInfo->ri_RelationDesc->rd_cdbpolicy->ptype == POLICYTYPE_REPLICATED &&
 		(GpIdentity.segindex >=
 		 resultRelInfo->ri_RelationDesc->rd_cdbpolicy->numsegments))
