@@ -1270,9 +1270,17 @@ typedef struct Motion
 	List		*hashExpr;			/* list of hash expressions */
 	List		*hashDataTypes;	    /* list of hash expr data type oids */
 
-	/* Output segments */
-	int 	  	numOutputSegs;		/* number of seg indexes in outputSegIdx array, 0 for broadcast */
-	int 	 	*outputSegIdx; 	 	/* array of output segindexes */
+	/*
+	 * The isBroadcast field is only used for motionType=MOTIONTYPE_FIXED,
+	 * if it is other types motion, please do not access this field.
+	 * The field is set true for Broadcast motion, and set false for
+	 * Gather motion.
+	 *
+	 * TODO: Historically, broadcast motion and gather motion's motiontype
+	 * are both MOTIONTYPE_FIXED. It is not a good idea. They should belong
+	 * to different motiontypes. We should refactor the motion types in future.
+	 */
+	bool 	  	isBroadcast;
 
 	/* For Explicit */
 	AttrNumber segidColIdx;			/* index of the segid column in the target list */

@@ -5819,9 +5819,6 @@ make_motion(PlannerInfo *root, Plan *lefttree,
 
 	plan->flow = NULL;
 
-	node->outputSegIdx = NULL;
-	node->numOutputSegs = 0;
-
 	return node;
 }
 
@@ -6556,6 +6553,7 @@ adjust_modifytable_flow(PlannerInfo *root, ModifyTable *node, List *is_split_upd
 	bool		all_subplans_entry = true,
 				all_subplans_replicated = true;
 	int			numsegments = -1;
+	Query		*qry = root->parse;
 
 	if (node->operation == CMD_INSERT)
 	{
@@ -6721,7 +6719,6 @@ adjust_modifytable_flow(PlannerInfo *root, ModifyTable *node, List *is_split_upd
 			RangeTblEntry *rte = rt_fetch(rti, root->parse->rtable);
 			GpPolicy   *targetPolicy;
 			GpPolicyType targetPolicyType;
-			Query *qry = root->parse;
 
 			Assert(rti > 0);
 			Assert(rte->rtekind == RTE_RELATION);
@@ -6857,6 +6854,8 @@ adjust_modifytable_flow(PlannerInfo *root, ModifyTable *node, List *is_split_upd
 
 					lcp->data.ptr_value = new_subplan;
 
+					all_subplans_replicated = false;
+
 					continue;
 				}
 				node->action_col_idxes = lappend_int(node->action_col_idxes, -1);
@@ -6885,6 +6884,10 @@ adjust_modifytable_flow(PlannerInfo *root, ModifyTable *node, List *is_split_upd
 	if (all_subplans_entry)
 	{
 		mark_plan_entry((Plan *) node);
+		if(!qry->needReshuffle)
+		{
+			((Plan *) node)->flow->numsegments = numsegments;
+		}
 	}
 	else if (all_subplans_replicated)
 	{
@@ -6892,7 +6895,10 @@ adjust_modifytable_flow(PlannerInfo *root, ModifyTable *node, List *is_split_upd
 	}
 	else
 	{
-		mark_plan_strewn((Plan *) node, numsegments);
+		if(!qry->needReshuffle)
+			mark_plan_strewn((Plan *) node, numsegments);
+		else
+			mark_plan_strewn((Plan *) node, getgpsegmentCount());
 
 		if (list_length(node->plans) == 1)
 		{
@@ -7142,7 +7148,7 @@ cdbpathtoplan_create_motion_plan(PlannerInfo *root,
 		int			destSegIndex = -1;	/* to dispatcher */
 
 		if (CdbPathLocus_IsSingleQE(path->path.locus))
-			destSegIndex = gp_singleton_segindex;	/* to singleton qExec */
+			destSegIndex = 0;//gp_singleton_segindex;	/* to singleton qExec */
 
 		if (path->path.pathkeys)
 		{
@@ -7184,34 +7190,19 @@ cdbpathtoplan_create_motion_plan(PlannerInfo *root,
 				 * for the key columns. But better safe than sorry.)
 				 */
 				subplan = prep;
-				motion = make_sorted_union_motion(root,
-												  subplan,
-												  numSortCols,
-												  sortColIdx,
-												  sortOperators,
-												  collations,
-												  nullsFirst,
-												  destSegIndex,
-												  false /* useExecutorVarFormat */,
-												  numsegments);
+				motion = make_sorted_union_motion(root, subplan, numSortCols, sortColIdx, sortOperators, collations,
+												  nullsFirst, false, numsegments);
 			}
 			else
 			{
 				/* Degenerate ordering... build unordered Union Receive */
-				motion = make_union_motion(subplan,
-										   destSegIndex,
-										   false	/* useExecutorVarFormat */,
-										   numsegments);
+				motion = make_union_motion(subplan, false, numsegments);
 			}
 		}
 
 		/* Unordered Union Receive */
 		else
-			motion = make_union_motion(subplan,
-									   destSegIndex,
-									   false	/* useExecutorVarFormat */,
-									   numsegments
-				);
+			motion = make_union_motion(subplan, false, numsegments);
 	}
 
 	/* Send all of the tuples to all of the QEs in gang above... */
