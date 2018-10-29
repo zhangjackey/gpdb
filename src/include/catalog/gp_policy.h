@@ -34,16 +34,21 @@ CATALOG(gp_distribution_policy,5002) BKI_WITHOUT_OIDS
 	int16		attrnums[1];
 	char		policytype; /* distribution policy type */
 	int32		numsegments;
+
+#ifdef CATALOG_VARLEN			/* variable-length fields start here */
+	text		policyoptions[1];	/* reserved attribute */
+#endif
 } FormData_gp_policy;
 
 /* GPDB added foreign key definitions for gpcheckcat. */
 FOREIGN_KEY(localoid REFERENCES pg_class(oid));
 
-#define Natts_gp_policy		4
+#define Natts_gp_policy		5
 #define Anum_gp_policy_localoid	1
 #define Anum_gp_policy_attrnums	2
 #define Anum_gp_policy_type	3
 #define Anum_gp_policy_numsegments	4
+#define Anum_gp_policy_options 5
 
 /*
  * Symbolic values for Anum_gp_policy_type column

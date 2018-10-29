@@ -389,8 +389,8 @@ GpPolicyStore(Oid tbloid, const GpPolicy *policy)
 
 	ArrayType  *attrnums;
 
-	bool		nulls[4];
-	Datum		values[4];
+	bool		nulls[5];
+	Datum		values[5];
 
 	Insist(policy->ptype != POLICYTYPE_ENTRY);
 
@@ -398,6 +398,7 @@ GpPolicyStore(Oid tbloid, const GpPolicy *policy)
 	nulls[1] = false;
 	nulls[2] = false;
 	nulls[3] = false;
+	nulls[4] = true; /* reserved attribute */
 	values[0] = ObjectIdGetDatum(tbloid);
 	values[3] = Int32GetDatum(policy->numsegments);
 
@@ -465,9 +466,9 @@ GpPolicyReplace(Oid tbloid, const GpPolicy *policy)
 	SysScanDesc scan;
 	ScanKeyData skey;
 	ArrayType  *attrnums;
-	bool		nulls[4];
-	Datum		values[4];
-	bool		repl[4];
+	bool		nulls[5];
+	Datum		values[5];
+	bool		repl[5];
 
 	Insist(!GpPolicyIsEntry(policy));
 
@@ -475,6 +476,7 @@ GpPolicyReplace(Oid tbloid, const GpPolicy *policy)
 	nulls[1] = false;
 	nulls[2] = false;
 	nulls[3] = false;
+	nulls[4] = true; /* reserved attribute */
 	values[0] = ObjectIdGetDatum(tbloid);
 	values[3] = Int32GetDatum(policy->numsegments);
 
@@ -521,6 +523,7 @@ GpPolicyReplace(Oid tbloid, const GpPolicy *policy)
 	repl[1] = true;
 	repl[2] = true;
 	repl[3] = true;
+	repl[4] = false;
 
 
 	/*
