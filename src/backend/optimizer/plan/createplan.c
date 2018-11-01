@@ -7145,11 +7145,6 @@ cdbpathtoplan_create_motion_plan(PlannerInfo *root,
 	/* Send all tuples to a single process? */
 	if (CdbPathLocus_IsBottleneck(path->path.locus))
 	{
-		int			destSegIndex = -1;	/* to dispatcher */
-
-		if (CdbPathLocus_IsSingleQE(path->path.locus))
-			destSegIndex = 0;//gp_singleton_segindex;	/* to singleton qExec */
-
 		if (path->path.pathkeys)
 		{
 			Plan	   *prep;
