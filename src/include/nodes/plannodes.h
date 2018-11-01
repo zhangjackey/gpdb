@@ -1272,7 +1272,7 @@ typedef struct Motion
 
 	/*
 	 * The isBroadcast field is only used for motionType=MOTIONTYPE_FIXED,
-	 * if it is other types motion, please do not access this field.
+	 * if it is other kind of motion, please do not access this field.
 	 * The field is set true for Broadcast motion, and set false for
 	 * Gather motion.
 	 *
