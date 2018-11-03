@@ -169,4 +169,3 @@ test: returning
 
 test: reshuffle reshuffle_ao reshuffle_aoco
 
-test: gangsize
