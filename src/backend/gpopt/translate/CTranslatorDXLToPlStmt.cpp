@@ -1988,7 +1988,11 @@ CTranslatorDXLToPlStmt::TranslateDXLMotion
 		}
 		case EdxlopPhysicalMotionRoutedDistribute:
 		{
+			ULONG segid_col = CDXLPhysicalRoutedDistributeMotion::Cast(motion_dxlop)->SegmentIdCol();
+			const TargetEntry *te_sort_col = child_context.GetTargetEntry(segid_col);
+
 			motion->motionType = MOTIONTYPE_EXPLICIT;
+			motion->segidColIdx = te_sort_col->resno;
 			motion->isBroadcast = false;
 
 			break;
