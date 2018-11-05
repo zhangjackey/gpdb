@@ -1,36 +1,36 @@
 set allow_system_table_mods = true;
 
-create table random_2_0 (a int, b int, c int, d int) distributed randomly;
+create temp table random_2_0 (a int, b int, c int, d int) distributed randomly;
 
 update gp_distribution_policy set numsegments = 2 where localoid = 'random_2_0'::regclass;
 
 insert into random_2_0 select i,i,i,i from generate_series(1, 10)i;
 
-create table replicate_2_1 (a int, b int, c int, d int) distributed replicated;
+create temp table replicate_2_1 (a int, b int, c int, d int) distributed replicated;
 
 update gp_distribution_policy set numsegments = 2 where localoid = 'replicate_2_1'::regclass;
 
 insert into replicate_2_1 select i,i,i,i from generate_series(1, 10)i;
 
-create table hash_3_3_2 (a int, b int, c int, d int) distributed by (a,b,c);
+create temp table hash_3_3_2 (a int, b int, c int, d int) distributed by (a,b,c);
 
 update gp_distribution_policy set numsegments = 3 where localoid = 'hash_3_3_2'::regclass;
 
 insert into hash_3_3_2 select i,i,i,i from generate_series(1, 10)i;
 
-create table replicate_3_3 (a int, b int, c int, d int) distributed replicated;
+create temp table replicate_3_3 (a int, b int, c int, d int) distributed replicated;
 
 update gp_distribution_policy set numsegments = 3 where localoid = 'replicate_3_3'::regclass;
 
 insert into replicate_3_3 select i,i,i,i from generate_series(1, 10)i;
 
-create table hash_2_3_4 (a int, b int, c int, d int) distributed by (a,b,c);
+create temp table hash_2_3_4 (a int, b int, c int, d int) distributed by (a,b,c);
 
 update gp_distribution_policy set numsegments = 2 where localoid = 'hash_2_3_4'::regclass;
 
 insert into hash_2_3_4 select i,i,i,i from generate_series(1, 10)i;
 
-create table replicate_2_5 (a int, b int, c int, d int) distributed replicated;
+create temp table replicate_2_5 (a int, b int, c int, d int) distributed replicated;
 
 update gp_distribution_policy set numsegments = 2 where localoid = 'replicate_2_5'::regclass;
 
