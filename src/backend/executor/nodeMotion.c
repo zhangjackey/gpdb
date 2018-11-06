@@ -1042,7 +1042,7 @@ ExecInitMotion(Motion * node, EState *estate, int eflags)
 			 * For ORCA generated plan we could distribute to ALL as partially
 			 * distributed tables are not supported by ORCA yet.
 			 */
-			motionstate->cdbhash = makeCdbHash(getgpsegmentCount());
+			numsegments = getgpsegmentCount();
 		}
 
 		motionstate->cdbhash = makeCdbHash(numsegments, nkeys, typeoids);

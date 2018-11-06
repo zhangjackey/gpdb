@@ -2901,7 +2901,6 @@ _readModifyTable(void)
 	READ_NODE_FIELD(action_col_idxes);
 	READ_NODE_FIELD(ctid_col_idxes);
 	READ_NODE_FIELD(oid_col_idxes);
-	READ_BOOL_FIELD(isReshuffle);
 
 	READ_DONE();
 }

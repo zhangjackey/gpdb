@@ -464,7 +464,6 @@ _outModifyTable(StringInfo str, const ModifyTable *node)
 	WRITE_NODE_FIELD(action_col_idxes);
 	WRITE_NODE_FIELD(ctid_col_idxes);
 	WRITE_NODE_FIELD(oid_col_idxes);
-	WRITE_BOOL_FIELD(isReshuffle);
 }
 
 static void
