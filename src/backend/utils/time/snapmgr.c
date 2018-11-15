@@ -1465,3 +1465,9 @@ GetCurrentDistributedSnapshotWithLocalMapping()
 
 	return NULL;
 }
+
+Snapshot
+GetCurrentSnapshot()
+{
+	return CurrentSnapshot;
+}

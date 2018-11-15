@@ -1276,7 +1276,7 @@ SearchCatCache(CatCache *cache,
 	scandesc = systable_beginscan(relation,
 								  cache->cc_indexoid,
 								  IndexScanOK(cache, cur_skey),
-								  GpPolicyRelationId != cache->cc_reloid ? NULL: GetActiveSnapshot(),
+								  GpPolicyRelationId != cache->cc_reloid ? NULL: GetCurrentSnapshot(),
 								  cache->cc_nkeys,
 								  cur_skey);
 
