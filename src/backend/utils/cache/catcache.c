@@ -36,6 +36,7 @@
 #include "utils/relcache.h"
 #include "utils/rel.h"
 #include "utils/resowner_private.h"
+#include "utils/snapmgr.h"
 #include "utils/syscache.h"
 #include "utils/tqual.h"
 
@@ -1275,7 +1276,7 @@ SearchCatCache(CatCache *cache,
 	scandesc = systable_beginscan(relation,
 								  cache->cc_indexoid,
 								  IndexScanOK(cache, cur_skey),
-								  NULL,
+								  GpPolicyRelationId != cache->cc_reloid ? NULL: GetActiveSnapshot(),
 								  cache->cc_nkeys,
 								  cur_skey);
 
