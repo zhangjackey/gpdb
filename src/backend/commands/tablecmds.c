@@ -49,6 +49,7 @@
 #include "catalog/pg_opclass.h"
 #include "catalog/pg_partition.h"
 #include "catalog/pg_partition_rule.h"
+#include "catalog/gp_policy.h"
 #include "catalog/pg_tablespace.h"
 #include "catalog/pg_trigger.h"
 #include "catalog/pg_tablespace.h"
@@ -14420,7 +14421,7 @@ static void checkUniqueIndexCompatible(Relation rel, GpPolicy *pol)
  * Reshuffle the relation data to new segments
  */
 static void
-ReshuffleRelationData(Relation rel)
+ReshuffleRelationData(Relation rel, DistributedBy *ldistro)
 {
 	/* construct a update stmt with reshuffle flag */
 	char				*prelname;
@@ -14437,6 +14438,7 @@ ReshuffleRelationData(Relation rel)
 	PlannedStmt 		*planned_stmt;
 	Oid					relationOid = InvalidOid;
 	AutoStatsCmdType 	cmdType = AUTOSTATS_CMDTYPE_SENTINEL;
+	int					nkeys;
 
 	stmt->needReshuffle = true;
 	stmt->targetList = NIL;
@@ -14445,7 +14447,7 @@ ReshuffleRelationData(Relation rel)
 	prelname = pstrdup(RelationGetRelationName(rel));
 	namespace_name = get_namespace_name(rel->rd_rel->relnamespace);
 
-	if (policy->numsegments >= getgpsegmentCount())
+	if (policy->numsegments >= getgpsegmentCount() && !ldistro)
 	{
 		ereport(NOTICE,
 				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
@@ -14461,22 +14463,33 @@ ReshuffleRelationData(Relation rel)
 	/* make an reshuffle expression to filter some tuples */
 	reshuffleExpr->newSegs = getgpsegmentCount();
 	reshuffleExpr->oldSegs = policy->numsegments;
-	reshuffleExpr->ptype = policy->ptype;
+	reshuffleExpr->ptype = ldistro ? POLICYTYPE_PARTITIONED : policy->ptype;
 	stmt->whereClause = (Node*)reshuffleExpr;
 
 	/* make an target list for the UpdateStmt */
-	for(i = 0; i < policy->nattrs; i++)
+	nkeys = ldistro ? list_length(ldistro->keys) : policy->nattrs;
+	for(i = 0; i < nkeys; i++)
 	{
-		ResTarget *res = makeNode(ResTarget);
-		TupleDesc desc = rel->rd_att;
-		AttrNumber attidx = policy->attrs[i];
+		ResTarget	*res = makeNode(ResTarget);
+		TupleDesc	desc = rel->rd_att;
+
 		ColumnRef	*column = makeNode(ColumnRef);
+
 		/*
 		 *  Use CoalesceExpr to prevent optimization
 		 */
 		CoalesceExpr *coalExpr = makeNode(CoalesceExpr);
 
-		res->name = pstrdup(NameStr(desc->attrs[attidx - 1]->attname));
+		//res->name = pstrdup(NameStr(desc->attrs[attidx - 1]->attname));
+		if(ldistro)
+		{
+			res->name = pstrdup(strVal(list_nth(ldistro->keys, i)));
+		}
+		else
+		{
+			AttrNumber	attidx = policy->attrs[i];
+			res->name = pstrdup(NameStr(desc->attrs[attidx - 1]->attname));
+		}
 
 		column->location = -1;
 		column->fields = list_make3(makeString(namespace_name),
@@ -14650,14 +14663,18 @@ ATExecSetDistributedBy(Relation rel, Node *node, AlterTableCmd *cmd)
 					MemoryContext oldcontext;
 					GpPolicy *newPolicy;
 
-					if (NULL != lsecond(lprime))
+					policy = rel->rd_cdbpolicy;
+
+					//TODO: add a macro to simplify this
+					if (ldistro &&
+						!(GpPolicyIsRandomPartitioned(policy) &&
+						  policy->numsegments == getgpsegmentCount()))
 						ereport(ERROR,
 								(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
-										errmsg("Can not set Distribute By")));
+										errmsg("Reshuffle only support distribute from random")));
 
-					ReshuffleRelationData(rel);
+					ReshuffleRelationData(rel, ldistro);
 
-					policy = rel->rd_cdbpolicy;
 					oldcontext = MemoryContextSwitchTo(GetMemoryChunkContext(rel));
 					newPolicy = GpPolicyCopy(policy);
 					MemoryContextSwitchTo(oldcontext);
