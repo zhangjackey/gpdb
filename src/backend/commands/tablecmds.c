@@ -14662,7 +14662,7 @@ ATExecSetDistributedBy(Relation rel, Node *node, AlterTableCmd *cmd)
 					 */
 					targetRelPartStatus = rel_part_status(RelationGetRelid(rel));
 
-					if(PART_STATUS_ROOT == targetRelPartStatus ||
+					if(PART_STATUS_LEAF == targetRelPartStatus ||
 					   PART_STATUS_NONE == targetRelPartStatus)
 					{
 						ReshuffleRelationData(rel);

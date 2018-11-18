@@ -251,6 +251,7 @@ test: gangsize
 test: writer_aborts_reader
 
 # test reshuffle
+# It may affect the result of 'gp_explain', so keep it below the 'gp_explain'
 test: reshuffle_helper
 test: reshuffle reshuffle_ao reshuffle_aoco
 # end of tests
