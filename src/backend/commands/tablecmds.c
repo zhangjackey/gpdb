@@ -14482,6 +14482,9 @@ ReshuffleRelationData(Relation rel)
 	}
 
 	relation = makeRangeVar(namespace_name, prelname, -1);
+
+	/* Treat it as a non-inherit table */
+	relation->inhOpt = INH_NO;
 	stmt->relation = relation;
 
 	/* make an reshuffle expression to filter some tuples */
@@ -14748,6 +14751,10 @@ ATExecExpandTable(List **wqueue, Relation rel, AlterTableCmd *cmd)
 	GpPolicyReplace(relid, newPolicy);
 }
 
+/*
+ * The arguments rootCmd and cmd is useless now, but we can
+ * keep consistent with ATExecExpandTableCTAS.
+ */
 static void
 ATExecExpandTableReshuffle(AlterTableCmd *rootCmd, Relation rel, AlterTableCmd *cmd, PartStatus ps)
 {
@@ -14755,11 +14762,18 @@ ATExecExpandTableReshuffle(AlterTableCmd *rootCmd, Relation rel, AlterTableCmd *
 	if (Gp_role != GP_ROLE_DISPATCH)
 		return;
 
-	/* root command should have moved data for sub-commands */
-	if (rootCmd != cmd)
+	/*
+	 * A root partition table can be treated as a series of leaf tables,
+	 * So if a root partition table is to redistribute, we can redistribute
+	 * the leaf partition table one by one.
+	 */
+	if (ps == PART_STATUS_INTERIOR ||
+		ps == PART_STATUS_ROOT)
 		return;
 
 	ReshuffleRelationData(rel);
+
+	return;
 }
 
 static void

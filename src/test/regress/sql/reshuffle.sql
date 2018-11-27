@@ -298,6 +298,12 @@ Update part_t1 set e = gp_segment_id;
 Select gp_segment_id, count(*) from part_t1 group by gp_segment_id;
 
 begin;
+alter table only part_t1 expand table;
+select relname, numsegments from gp_distribution_policy d, pg_class c where c.oid = d.localoid and c.relname like 'part_t1%' and d.numsegments = 3;
+select gp_segment_id, count(*) from part_t1 group by gp_segment_id;; 
+abort;
+
+begin;
 Alter table part_t1 expand table;
 Select gp_segment_id, count(*) from part_t1 group by gp_segment_id;
 abort;
@@ -336,6 +342,12 @@ Update part_t1 set e = gp_segment_id;
 
 Select count(*) from part_t1;
 Select count(*) > 0 from part_t1 where gp_segment_id=2;
+
+begin;
+alter table only part_t1 expand table;
+select relname, numsegments from gp_distribution_policy d, pg_class c where c.oid = d.localoid and c.relname like 'part_t1%' and d.numsegments = 3;
+select gp_segment_id, count(*)>0 from part_t1 group by gp_segment_id;
+abort;
 
 begin;
 Alter table part_t1 expand table;
@@ -406,6 +418,13 @@ insert into inherit_t1_p5 select i,i from generate_series(1,10) i;
 select count(*) > 0 from inherit_t1_p1 where gp_segment_id = 2;
 
 begin;
+alter table only inherit_t1_p1 expand table;
+select relname, numsegments from gp_distribution_policy d, pg_class c where c.oid = d.localoid and c.relname like 'inherit_t1_p%' and d.numsegments = 3;
+select gp_segment_id, count(*) from inherit_t1_p1 group by gp_segment_id;
+select gp_segment_id, count(*) from inherit_t1_p2 group by gp_segment_id;
+abort;
+
+begin;
 alter table inherit_t1_p1 expand table;
 select count(*) > 0 from inherit_t1_p1 where gp_segment_id = 2;
 abort;
@@ -417,3 +436,4 @@ alter table inherit_t1_p1 expand table;
 select count(*) > 0 from inherit_t1_p1 where gp_segment_id = 2;
 
 DROP TABLE inherit_t1_p1 CASCADE;
+
