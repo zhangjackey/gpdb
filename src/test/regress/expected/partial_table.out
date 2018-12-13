@@ -4168,3 +4168,88 @@ rollback;
 -- to perform distributed commit on the other segments.
 --
 insert into r1 (c4) values (pg_relation_size('r2'));
+--
+-- It is used to test this case:
+--   A: replicated table, distributed on 3 segments
+--   B: replicated table, distributed on 1 or 2 segments
+--   UPDATE A SET XXX FROM B WHERE XXX;
+-- We have to add a broadcast motion on B so that A can update/delete correctly.
+--
+-- This test case is similar with the test case in 'rpt_returning', but the
+-- table in this test case is partial table.
+--
+select gp_debug_set_create_table_default_numsegments(3);
+ gp_debug_set_create_table_default_numsegments 
+-----------------------------------------------
+ 3
+(1 row)
+
+CREATE TEMP TABLE rpt_more (f1 serial, f2 text, f3 int default 42, f4 int8 default 99);
+NOTICE:  Table doesn't have 'DISTRIBUTED BY' clause -- Using column named 'f1' as the Greenplum Database data distribution key for this table.
+HINT:  The 'DISTRIBUTED BY' clause determines the distribution of data. Make sure column(s) chosen are the optimal data distribution key to minimize skew.
+ALTER TABLE rpt_more SET DISTRIBUTED REPLICATED;
+INSERT INTO rpt_more (f1,f2,f3,f4)
+  VALUES (2, 'more', DEFAULT, 141), (16, 'zoo2', 57, DEFAULT);
+SELECT * FROM rpt_more;
+ f1 |  f2  | f3 | f4  
+----+------+----+-----
+  2 | more | 42 | 141
+ 16 | zoo2 | 57 |  99
+(2 rows)
+
+select gp_debug_set_create_table_default_numsegments(1);
+ gp_debug_set_create_table_default_numsegments 
+-----------------------------------------------
+ 1
+(1 row)
+
+CREATE TEMP TABLE rpt_less (f2j text, other int);
+NOTICE:  Table doesn't have 'DISTRIBUTED BY' clause -- Using column named 'f2j' as the Greenplum Database data distribution key for this table.
+HINT:  The 'DISTRIBUTED BY' clause determines the distribution of data. Make sure column(s) chosen are the optimal data distribution key to minimize skew.
+ALTER TABLE rpt_less SET DISTRIBUTED REPLICATED;
+INSERT INTO rpt_less VALUES('more', 12345);
+INSERT INTO rpt_less VALUES('zoo2', 54321);
+INSERT INTO rpt_less VALUES('other', 0);
+CREATE TEMP VIEW joinview AS
+  SELECT rpt_more.*, other FROM rpt_more JOIN rpt_less ON (f2 = f2j);
+SELECT * FROM joinview;
+ f1 |  f2  | f3 | f4  | other 
+----+------+----+-----+-------
+  2 | more | 42 | 141 | 12345
+ 16 | zoo2 | 57 |  99 | 54321
+(2 rows)
+
+CREATE RULE joinview_u AS ON UPDATE TO joinview DO INSTEAD
+  UPDATE rpt_more SET f1 = new.f1, f3 = new.f3
+    FROM rpt_less WHERE f2 = f2j AND f2 = old.f2
+    RETURNING rpt_more.*, other;
+EXPLAIN UPDATE joinview SET f1 = f1 + 1 WHERE f3 = 57 RETURNING *, other + 1;
+                                               QUERY PLAN                                               
+--------------------------------------------------------------------------------------------------------
+ Explicit Gather Motion 3:1  (slice2; segments: 3)  (cost=3.09..4.41 rows=4 width=53)
+   ->  Update on rpt_more  (cost=3.09..4.41 rows=2 width=53)
+         ->  Hash Join  (cost=3.09..4.41 rows=2 width=53)
+               Hash Cond: (rpt_less.f2j = rpt_more.f2)
+               ->  Broadcast Motion 1:3  (slice1; segments: 1)  (cost=2.04..3.29 rows=10 width=45)
+                     ->  Hash Join  (cost=2.04..3.15 rows=2 width=45)
+                           Hash Cond: (rpt_less.f2j = rpt_less_1.f2j)
+                           ->  Hash Join  (cost=1.02..2.08 rows=2 width=34)
+                                 Hash Cond: (rpt_more_1.f2 = rpt_less.f2j)
+                                 ->  Seq Scan on rpt_more rpt_more_1  (cost=0.00..1.02 rows=1 width=19)
+                                       Filter: (f3 = 57)
+                                 ->  Hash  (cost=1.01..1.01 rows=1 width=15)
+                                       ->  Seq Scan on rpt_less  (cost=0.00..1.01 rows=1 width=15)
+                           ->  Hash  (cost=1.01..1.01 rows=1 width=11)
+                                 ->  Seq Scan on rpt_less rpt_less_1  (cost=0.00..1.01 rows=1 width=11)
+               ->  Hash  (cost=1.02..1.02 rows=1 width=23)
+                     ->  Seq Scan on rpt_more  (cost=0.00..1.02 rows=1 width=23)
+ Planning time: 10.785 ms
+ Optimizer: legacy query optimizer
+(19 rows)
+
+UPDATE joinview SET f1 = f1 + 1 WHERE f3 = 57 RETURNING *, other + 1;
+ f1 |  f2  | f3 | f4 | other | ?column? 
+----+------+----+----+-------+----------
+ 17 | zoo2 | 57 | 99 | 54321 |    54322
+(1 row)
+
