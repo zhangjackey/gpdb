@@ -136,6 +136,25 @@ select gp_debug_reset_create_table_default_numsegments();
      and t2.c1 > any (select max(t1.c1) from t1 where t1.c2 = t2.c2);
 
 --
+-- It is used to test this case:
+--   A: replicated table, distributed on 2 segments
+--   B: replicated table, distributed on 1 segments
+--   UPDATE A SET XXX FROM B WHERE XXX;
+-- We have to add a broadcast motion on B so that A can update/delete correctly.
+--
+begin;
+    insert into d1 select i,i,i,i from generate_series(1,2) i;
+    insert into d2 select i,i,i,i from generate_series(1,3) i;
+    explain update d2 a set c3=b.c3 from d1 b returning *;
+    update d2 a set c3=b.c3 from d1 b returning *;
+    explain update d1 a set c3=b.c3 from d2 b returning *;
+    update d1 a set c3=b.c3 from d2 b returning *;
+abort;
+-- restore the analyze information
+analyze d1;
+analyze d2;
+
+--
 -- create table: LIKE, INHERITS and DISTRIBUTED BY
 --
 -- tables are always created with DEFAULT as numsegments,
@@ -566,41 +585,4 @@ rollback;
 --
 insert into r1 (c4) values (pg_relation_size('r2'));
 
---
--- It is used to test this case:
---   A: replicated table, distributed on 3 segments
---   B: replicated table, distributed on 1 or 2 segments
---   UPDATE A SET XXX FROM B WHERE XXX;
--- We have to add a broadcast motion on B so that A can update/delete correctly.
---
--- This test case is similar with the test case in 'rpt_returning', but the
--- table in this test case is partial table.
---
 
-select gp_debug_set_create_table_default_numsegments(3);
-CREATE TEMP TABLE rpt_more (f1 serial, f2 text, f3 int default 42, f4 int8 default 99);
-ALTER TABLE rpt_more SET DISTRIBUTED REPLICATED;
-
-INSERT INTO rpt_more (f1,f2,f3,f4)
-  VALUES (2, 'more', DEFAULT, 141), (16, 'zoo2', 57, DEFAULT);
-SELECT * FROM rpt_more;
-
-select gp_debug_set_create_table_default_numsegments(1);
-CREATE TEMP TABLE rpt_less (f2j text, other int);
-ALTER TABLE rpt_less SET DISTRIBUTED REPLICATED;
-INSERT INTO rpt_less VALUES('more', 12345);
-INSERT INTO rpt_less VALUES('zoo2', 54321);
-INSERT INTO rpt_less VALUES('other', 0);
-
-CREATE TEMP VIEW joinview AS
-  SELECT rpt_more.*, other FROM rpt_more JOIN rpt_less ON (f2 = f2j);
-SELECT * FROM joinview;
-
-CREATE RULE joinview_u AS ON UPDATE TO joinview DO INSTEAD
-  UPDATE rpt_more SET f1 = new.f1, f3 = new.f3
-    FROM rpt_less WHERE f2 = f2j AND f2 = old.f2
-    RETURNING rpt_more.*, other;
-
-EXPLAIN UPDATE joinview SET f1 = f1 + 1 WHERE f3 = 57 RETURNING *, other + 1;
-
-UPDATE joinview SET f1 = f1 + 1 WHERE f3 = 57 RETURNING *, other + 1;

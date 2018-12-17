@@ -327,13 +327,15 @@ cdbpath_create_motion_path(PlannerInfo *root,
 		{
 			pathkeys = subpath->pathkeys;
 		}
-		else if(CdbPathLocus_IsReplicated(locus))
+		else if (CdbPathLocus_IsReplicated(locus))
 		{
 			/*
 			 * Assume that this case only can be generated in
 			 * UPDATE/DELETE statement
 			 */
-			Assert(root->upd_del_replicated_table > 0);
+			if (root->upd_del_replicated_table == 0)
+				goto invalid_motion_request;
+
 		}
 		else
 			goto invalid_motion_request;
