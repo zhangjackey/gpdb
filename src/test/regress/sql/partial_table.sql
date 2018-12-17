@@ -584,5 +584,3 @@ rollback;
 -- to perform distributed commit on the other segments.
 --
 insert into r1 (c4) values (pg_relation_size('r2'));
-
-
