@@ -16,6 +16,7 @@
 
 #include "pg_upgrade.h"
 
+static void check_online_expansion(void);
 static void check_external_partition(void);
 static void check_covering_aoindex(void);
 static void check_partition_indexes(void);
@@ -32,10 +33,91 @@ static void check_orphaned_toastrels(void);
 void
 check_greenplum(void)
 {
+	check_online_expansion();
 	check_external_partition();
 	check_covering_aoindex();
 	check_partition_indexes();
 	check_orphaned_toastrels();
+}
+
+/*
+ *	check_online_expansion
+ *
+ *	Check for online expansion status and refuse the upgrade if online
+ *	expansion is in progress.
+ */
+static void
+check_online_expansion(void)
+{
+	bool		expansion = false;
+	int			dbnum;
+
+	/*
+	 * Only need to check cluster expansion status in gpdb6 or later.
+	 */
+	if (GET_MAJOR_VERSION(old_cluster.major_version) < 804)
+		return;
+
+	/*
+	 * We only need to check the cluster expansion status on master.
+	 * In the other hand the status can not be detected correctly on segments.
+	 */
+	if (user_opts.segment_mode == SEGMENT)
+		return;
+
+	prep_status("Checking for online expansion status");
+
+	/*
+	 * There are many ways to know online expansion progress:
+	 *
+	 * 1. check for existance of $MASTER_DATA_DIRECTORY/gpexpand.status;
+	 * 2. check for existance of helper schema, 'gpexpand' by default;
+	 * 3. check for existance of partially distributed tables;
+	 *
+	 * Here we use approach 3, the shortcoming of it is that there is no index
+	 * on gp_distribution_policy.numsegments so the performance may be bad when
+	 * there are large amount of tables and all fully distributed.
+	 *
+	 * FIXME: We will provide a new UDF to check the status of cluster expansion,
+	 * once that is ready we could replace below detection with query to that UDF.
+	 */
+
+	for (dbnum = 0; dbnum < old_cluster.dbarr.ndbs; dbnum++)
+	{
+		PGresult   *res;
+		int			ntups;
+		DbInfo	   *active_db = &old_cluster.dbarr.dbs[dbnum];
+		PGconn	   *conn;
+
+		conn = connectToServer(&old_cluster, active_db->db_name);
+		res = executeQueryOrDie(conn,
+								"SELECT true AS expansion "
+								"FROM gp_distribution_policy d "
+								"JOIN gp_toolkit.__gp_number_of_segments n "
+								"ON d.numsegments <> n.numsegments "
+								"LIMIT 1;");
+
+		ntups = PQntuples(res);
+
+		if (ntups > 0)
+			expansion = true;
+
+		PQclear(res);
+		PQfinish(conn);
+
+		if (expansion)
+			break;
+	}
+
+	if (expansion)
+	{
+		pg_log(PG_REPORT, "fatal\n");
+		pg_log(PG_FATAL,
+			   "| Your installation is in progress of online expansion,\n"
+			   "| must complete that job before the upgrade.\n\n");
+	}
+	else
+		check_ok();
 }
 
 /*

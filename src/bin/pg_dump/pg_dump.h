@@ -347,6 +347,11 @@ typedef struct _tableInfo
 	bool		parparent;		/* true if the table is partition parent */
 	int			numTriggers;	/* number of triggers for table */
 	struct _triggerInfo *triggers;		/* array of TriggerInfo structs */
+
+	/*
+	 * GPDB specific attributes
+	 */
+	int			numsegments;	/* data distribution segments, used by binary_upgrade */
 } TableInfo;
 
 typedef struct _attrDefInfo

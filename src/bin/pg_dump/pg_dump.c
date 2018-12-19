@@ -341,6 +341,7 @@ static bool testAttributeEncodingSupport(Archive *fout);
 
 static char *nextToken(register char **stringp, register const char *delim);
 static void addDistributedBy(Archive *fout, PQExpBuffer q, TableInfo *tbinfo, int actual_atts);
+static void updateNumsegments(Archive *fout, PQExpBuffer q, TableInfo *tbinfo);
 static bool isGPDB4300OrLater(Archive *fout);
 static bool isGPDB(Archive *fout);
 static bool isGPDB5000OrLater(Archive *fout);
@@ -13949,6 +13950,13 @@ dumpExternal(Archive *fout, TableInfo *tbinfo, PQExpBuffer q, PQExpBuffer delq)
 
 		appendPQExpBufferStr(q, ";\n");
 
+		if (gpdb6OrLater && iswritable && binary_upgrade)
+		{
+			appendPQExpBufferStr(q, "SET allow_system_table_mods = true;\n");
+			updateNumsegments(fout, q, tbinfo);
+			appendPQExpBufferStr(q, "RESET allow_system_table_mods;\n");
+		}
+
 		PQclear(res);
 
 
@@ -14599,6 +14607,9 @@ dumpTableSchema(Archive *fout, TableInfo *tbinfo)
 			 * setting the allow_system_table_mods GUC first.
 			 */
 			appendPQExpBuffer(q, "SET allow_system_table_mods = true;\n");
+
+			if (isGPDB6000OrLater(fout))
+				updateNumsegments(fout, q, tbinfo);
 
 			for (j = 0; j < tbinfo->numatts; j++)
 			{
@@ -16823,7 +16834,7 @@ addDistributedBy(Archive *fout, PQExpBuffer q, TableInfo *tbinfo, int actual_att
 
 	if (isGPDB6000OrLater(fout))
 		appendPQExpBuffer(query,
-						  "SELECT attrnums, policytype FROM gp_distribution_policy as p "
+						  "SELECT attrnums, policytype, numsegments FROM gp_distribution_policy as p "
 						  "WHERE p.localoid = %u",
 						  tbinfo->dobj.catId.oid);
 	else
@@ -16874,6 +16885,21 @@ addDistributedBy(Archive *fout, PQExpBuffer q, TableInfo *tbinfo, int actual_att
 		policydef = PQgetvalue(res, 0, 0);
 		policytype = *(char *)PQgetvalue(res, 0, 1);
 
+		if (isGPDB6000OrLater(fout))
+		{
+			char	   *numsegments_str;
+
+			Assert(!PQgetisnull(res, 0, 2));
+
+			numsegments_str = PQgetvalue(res, 0, 2);
+
+			Assert(numsegments_str[0]);
+
+			tbinfo->numsegments = atoi(numsegments_str);
+		}
+		else
+			tbinfo->numsegments = -1;
+
 		if (policytype == SYM_POLICYTYPE_REPLICATED)
 		{
 			/* policy type is 'r' - distribute replicated */
@@ -16903,6 +16929,77 @@ addDistributedBy(Archive *fout, PQExpBuffer q, TableInfo *tbinfo, int actual_att
 
 	PQclear(res);
 	destroyPQExpBuffer(query);
+}
+
+/*
+ *	updateNumsegments
+ *
+ *  update the numsegments of the passed in relation.  Must be executed after
+ *  the CREATE TABLE command.
+ */
+static void
+updateNumsegments(Archive *fout, PQExpBuffer q, TableInfo *tbinfo)
+{
+	if (!isGPDB6000OrLater(fout) ||
+		!binary_upgrade ||
+		tbinfo->numsegments <= 0)
+		return;
+
+	appendPQExpBuffer(q,
+					  "UPDATE gp_distribution_policy\n"
+					  "   SET numsegments = %d\n"
+					  " WHERE localoid = '%s'::regclass;\n",
+					  tbinfo->numsegments,
+					  tbinfo->dobj.name);
+
+	/*
+	 * All the sub-partition table's numsegments need to be updated.
+	 */
+	if (tbinfo->parparent)
+	{
+		PQExpBuffer partquery = createPQExpBuffer();
+		PGresult   *partres;
+		int			count = 0;
+
+		appendPQExpBuffer(partquery,
+						  "SELECT DISTINCT(child.oid) "
+						  "FROM pg_catalog.pg_partition part, "
+						  "     pg_catalog.pg_partition_rule rule, "
+						  "     pg_catalog.pg_class child "
+						  "WHERE part.parrelid = '%u'::pg_catalog.oid "
+						  "  AND rule.paroid = part.oid "
+						  "  AND child.oid = rule.parchildrelid",
+						  tbinfo->dobj.catId.oid);
+		partres = ExecuteSqlQuery(fout, partquery->data, PGRES_TUPLES_OK);
+
+		count = PQntuples(partres);
+
+		if (count > 0)
+		{
+			int			i;
+
+			appendPQExpBuffer(q,
+							  "UPDATE gp_distribution_policy\n"
+							  "   SET numsegments = %d\n"
+							  " WHERE localoid in(",
+							  tbinfo->numsegments);
+
+			for (i = 0; i < count; i++)
+			{
+				Oid part_oid = atooid(PQgetvalue(partres, i, 0));
+
+				appendPQExpBuffer(q, "%u", part_oid);
+
+				if (count - 1 != i)
+					appendPQExpBufferStr(q, ", ");
+			}
+
+			appendPQExpBufferStr(q, ");\n");
+		}
+
+		PQclear(partres);
+		destroyPQExpBuffer(partquery);
+	}
 }
 
 /*
