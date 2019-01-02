@@ -237,7 +237,7 @@ test: oid_wraparound
 # fts_recovery_in_progresss uses fault injectors to simulate FTS fault states,
 # hence it should be run in isolation.
 test: fts_recovery_in_progress
-test: autovacuum-template0
+#test: autovacuum-template0
 
 # Online expand introduce the partial tables, check them if they can run correctly
 test: gangsize
