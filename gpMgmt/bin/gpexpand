@@ -857,7 +857,11 @@ class SegmentTemplate:
                                 self.tempDir + '/gpperfmon/data')
         rmCmd.run(validateAfter=True)
         rmCmd = RemoveDirectoryContents('gpexpand remove logs from template',
-                                        self.tempDir + '/pg_log')
+                                                                             self.tempDir + '/pg_log')
+        rmCmd.run(validateAfter=True)
+
+        rmCmd = RemoveDirectoryContents('gpexpand remove logs from template',
+                                        self.tempDir + '/pg_distributedlog')
         rmCmd.run(validateAfter=True)
 
         # other files not needed
