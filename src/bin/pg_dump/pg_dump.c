@@ -16940,17 +16940,20 @@ addDistributedBy(Archive *fout, PQExpBuffer q, TableInfo *tbinfo, int actual_att
 static void
 updateNumsegments(Archive *fout, PQExpBuffer q, TableInfo *tbinfo)
 {
+	char * relname = NULL;
+
 	if (!isGPDB6000OrLater(fout) ||
 		!binary_upgrade ||
 		tbinfo->numsegments <= 0)
 		return;
 
+	relname = pg_strdup(fmtQualifiedDumpable(tbinfo));
 	appendPQExpBuffer(q,
 					  "UPDATE gp_distribution_policy\n"
 					  "   SET numsegments = %d\n"
-					  " WHERE localoid = '%s'::regclass;\n",
+					  " WHERE localoid = '%s'::pg_catalog.regclass;\n",
 					  tbinfo->numsegments,
-					  tbinfo->dobj.name);
+					  relname);
 
 	/*
 	 * All the sub-partition table's numsegments need to be updated.
@@ -17000,6 +17003,8 @@ updateNumsegments(Archive *fout, PQExpBuffer q, TableInfo *tbinfo)
 		PQclear(partres);
 		destroyPQExpBuffer(partquery);
 	}
+
+	pfree(relname);
 }
 
 /*

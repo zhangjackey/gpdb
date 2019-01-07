@@ -67,21 +67,7 @@ check_online_expansion(void)
 
 	prep_status("Checking for online expansion status");
 
-	/*
-	 * There are many ways to know online expansion progress:
-	 *
-	 * 1. check for existance of $MASTER_DATA_DIRECTORY/gpexpand.status;
-	 * 2. check for existance of helper schema, 'gpexpand' by default;
-	 * 3. check for existance of partially distributed tables;
-	 *
-	 * Here we use approach 3, the shortcoming of it is that there is no index
-	 * on gp_distribution_policy.numsegments so the performance may be bad when
-	 * there are large amount of tables and all fully distributed.
-	 *
-	 * FIXME: We will provide a new UDF to check the status of cluster expansion,
-	 * once that is ready we could replace below detection with query to that UDF.
-	 */
-
+	/* Check if the cluster is in expansion status */
 	for (dbnum = 0; dbnum < old_cluster.dbarr.ndbs; dbnum++)
 	{
 		PGresult   *res;
@@ -93,8 +79,10 @@ check_online_expansion(void)
 		res = executeQueryOrDie(conn,
 								"SELECT true AS expansion "
 								"FROM gp_distribution_policy d "
-								"JOIN gp_toolkit.__gp_number_of_segments n "
-								"ON d.numsegments <> n.numsegments "
+								"JOIN (SELECT count(*) segcount "
+								"      FROM gp_segment_configuration "
+								"      WHERE content >= 0 and role = 'p') s "
+								"ON d.numsegments <> s.segcount "
 								"LIMIT 1;");
 
 		ntups = PQntuples(res);
