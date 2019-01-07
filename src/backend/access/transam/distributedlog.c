@@ -69,6 +69,22 @@ AdvanceTransactionIdToNextPage(TransactionId xid)
 	return xid;
 }
 
+static TransactionId
+AdvanceTransactionIdToPrevPage(TransactionId xid)
+{
+	/* Advance to next page. */
+	xid -= ENTRIES_PER_PAGE;
+
+	/* Retreat to beginning of the page */
+	xid -= (xid % ENTRIES_PER_PAGE);
+
+	/* Skip over the special XIDs */
+	while (xid < FirstNormalTransactionId)
+		xid++;
+
+	return xid;
+}
+
 
 /*
  * Link to shared-memory data structures for DistributedLog control
@@ -109,6 +125,97 @@ static void DistributedLog_WriteTruncateXlogRec(int page);
  *
  * The caller is expected to hold DistributedLogControlLock on entry.
  */
+//static void
+//DistributedLog_InitOldestXmin(TransactionId oldestLocalXmin)
+//{
+//	TransactionId oldestXmin = = oldestLocalXmin;
+//	TransactionId xid = oldestLocalXmin;
+//
+//	if (DistributedLogShared->oldestXmin != InvalidTransactionId)
+//	{
+//		/* Already initialized. */
+//		return;
+//	}
+//
+//	/*
+//	 * Start scanning from oldest datfrozenxid, until we find a
+//	 * valid page.
+//	 */
+//	for (;;)
+//	{
+//		int	page = TransactionIdToPage(xid);
+//
+//		if (!SimpleLruDoesPhysicalPageExist(DistributedLogCtl, page))
+//		{
+//			break;
+//		}
+//
+//		oldestXmin = xid;
+//
+//		/* Advance to the first XID on the prev page */
+//		xid = AdvanceTransactionIdToPrevPage(xid);
+//	}
+//
+//	if (TransactionIdPrecedes(oldestLocalXmin, oldestXmin))
+//		oldestXmin = oldestLocalXmin;
+//
+//	xid = GetTransactionIdLimit();
+//
+//	if (TransactionIdPrecedes(oldestXmin, xid))
+//		oldestXmin = xid;
+//
+//	elog((Debug_print_full_dtm ? LOG : DEBUG5),
+//		 "Initialized oldestxmin to %u", oldestXmin);
+//
+//	DistributedLogShared->oldestXmin = oldestXmin;
+//}
+
+
+//static void
+//DistributedLog_InitOldestXmin(TransactionId oldestLocalXmin)
+//{
+//	TransactionId oldestXmin = oldestLocalXmin;
+//	TransactionId xid = oldestLocalXmin;
+//
+//
+//	if (DistributedLogShared->oldestXmin != InvalidTransactionId)
+//	{
+//		/* Already initialized. */
+//		return;
+//	}
+//
+//	/*
+//	 * Start scanning from oldest datfrozenxid, until we find the first
+//	 * valid page.
+//	 */
+//	for (;;)
+//	{
+//		int	page = TransactionIdToPage(xid);
+//
+//		if (!SimpleLruDoesPhysicalPageExist(DistributedLogCtl, page))
+//		{
+//			break;
+//		}
+//
+//		oldestXmin = xid;
+//
+//		/* Advance to the first XID on the prev page */
+//		xid = AdvanceTransactionIdToPrevPage(xid);
+//	}
+//
+//	xid = GetTransactionIdLimit();
+//
+//	if (TransactionIdPrecedes(oldestXmin, xid))
+//		oldestXmin = xid;
+//	else if (TransactionIdPrecedes(oldestLocalXmin, oldestXmin))
+//		oldestXmin = oldestLocalXmin;
+//
+//	elog((Debug_print_full_dtm ? LOG : DEBUG5),
+//		 "Initialized oldestxmin to %u", oldestXmin);
+//
+//	DistributedLogShared->oldestXmin = oldestXmin;
+//}
+
 static void
 DistributedLog_InitOldestXmin(TransactionId oldestLocalXmin)
 {
@@ -154,7 +261,6 @@ DistributedLog_InitOldestXmin(TransactionId oldestLocalXmin)
 
 	DistributedLogShared->oldestXmin = oldestXmin;
 }
-
 /*
  * Advance the "oldest xmin" among distributed snapshots.
  *
