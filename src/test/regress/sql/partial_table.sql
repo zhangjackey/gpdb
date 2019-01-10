@@ -584,3 +584,8 @@ rollback;
 -- to perform distributed commit on the other segments.
 --
 insert into r1 (c4) values (pg_relation_size('r2'));
+
+-- start_ignore
+reset search_path;
+drop schema test_partial_table cascade;
+-- end_ignore
