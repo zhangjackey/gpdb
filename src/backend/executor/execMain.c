@@ -151,6 +151,7 @@ static PartitionNode *BuildPartitionNodeFromRoot(Oid relid);
 static void InitializeQueryPartsMetadata(PlannedStmt *plannedstmt, EState *estate);
 static void AdjustReplicatedTableCounts(EState *estate);
 
+
 /* end of local decls */
 
 /*
@@ -1804,6 +1805,9 @@ InitPlan(QueryDesc *queryDesc, int eflags)
 	 * set the number of partition selectors for every dynamic scan id
 	 */
 	estate->dynamicTableScanInfo->numSelectorsPerScanId = plannedstmt->numSelectorsPerScanId;
+
+
+
 
 	/*
 	 * Similarly, we have to lock relations selected FOR [KEY] UPDATE/SHARE
@@ -5070,3 +5074,4 @@ AdjustReplicatedTableCounts(EState *estate)
 	if (containReplicatedTable)
 		estate->es_processed = estate->es_processed / numsegments;
 }
+

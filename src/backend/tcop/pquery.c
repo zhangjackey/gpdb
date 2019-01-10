@@ -70,7 +70,11 @@ static uint64 DoPortalRunFetch(Portal portal,
 				 DestReceiver *dest);
 static void DoPortalRewind(Portal portal);
 static void PortalSetBackoffWeight(Portal portal);
-
+static void acquireVirtualUpdateLock(Oid relid, LOCKMODE lockmode);
+static bool isPlanSplitUpdate(Plan *plan);
+static bool mightEvalPlanQual(Plan *plan);
+static bool isNaiveModifyTable(Plan *plan);
+static void hehehehe(Plan *plan, Oid relid);
 /*
  * CreateQueryDesc
  *
@@ -616,6 +620,7 @@ PortalStart(Portal portal, ParamListInfo params,
 	PG_TRY();
 	{
 		ActivePortal = portal;
+
 		if (portal->resowner)
 			CurrentResourceOwner = portal->resowner;
 		PortalContext = PortalGetHeapMemory(portal);
@@ -639,6 +644,8 @@ PortalStart(Portal portal, ParamListInfo params,
 		switch (portal->strategy)
 		{
 			case PORTAL_ONE_SELECT:
+
+
 
 				/* Must set snapshot before starting executor. */
 				if (snapshot)
@@ -1441,6 +1448,7 @@ PortalRunMulti(Portal portal, bool isTopLevel,
 		if (IsA(stmt, PlannedStmt) &&
 			((PlannedStmt *) stmt)->utilityStmt == NULL)
 		{
+			Oid relid = InvalidOid;
 			/*
 			 * process a plannable query.
 			 */
@@ -1450,6 +1458,17 @@ PortalRunMulti(Portal portal, bool isTopLevel,
 
 			if (log_executor_stats)
 				ResetUsage();
+
+
+			if (pstmt && pstmt->planTree)
+			{
+				if (IsA(pstmt->planTree, ModifyTable) || IsA(pstmt->planTree, Motion))
+				{
+					if(pstmt->rtable)
+						relid = ((RangeTblEntry *) linitial(pstmt->rtable))->relid;
+					hehehehe(pstmt->planTree, relid);
+				}
+			}
 
 			/*
 			 * Must always have a snapshot for plannable queries.  First time
@@ -1953,5 +1972,96 @@ PortalSetBackoffWeight(Portal portal)
 
 		/* Initialize the SHM backend entry with the computed backoff weight */
 		BackoffBackendEntryInit(gp_session_id, gp_command_count, weight);
+	}
+}
+
+static void
+acquireVirtualUpdateLock(Oid relid, LOCKMODE lockmode)
+{
+	LOCKTAG		tag;
+
+	SET_LOCKTAG_VIRTUAL_UPDATE(tag, relid);
+	(void) LockAcquire(&tag, lockmode, false, false);
+
+	return;
+}
+
+static bool
+isPlanSplitUpdate(Plan *plan)
+{
+	bool result = false;
+
+	if (IsA(plan, Motion))
+		plan = plan->lefttree;
+
+	if (IsA(plan, ModifyTable))
+	{
+		result = ((ModifyTable*)plan)->isSplitUpdate;
+	}
+
+	return result;
+}
+
+static bool
+mightEvalPlanQual(Plan *plan)
+{
+	bool result = false;
+
+	if (IsA(plan, Motion))
+		plan = plan->lefttree;
+
+	if (IsA(plan, ModifyTable) &&
+		((ModifyTable*)plan)->operation != CMD_INSERT)
+	{
+		if (plan->nMotionNodes > 0)
+			result = true;
+	}
+
+	return result;
+}
+
+static bool
+isNaiveModifyTable(Plan *plan)
+{
+	bool result = false;
+
+	if (IsA(plan, Motion))
+		plan = plan->lefttree;
+
+	if (IsA(plan, ModifyTable) &&
+		((ModifyTable*)plan)->operation != CMD_INSERT)
+	{
+		result = true;
+	}
+
+	return result;
+}
+
+static void
+hehehehe(Plan *plan, Oid relid)
+{
+/*
+* 1. splitupdate acquire 4
+* 2. has motion acquire 7
+* 3. other wise 3
+*/
+
+	if (Gp_role == GP_ROLE_DISPATCH)
+	{
+		if (isPlanSplitUpdate(plan))
+		{
+			acquireVirtualUpdateLock(relid,
+									 ShareUpdateExclusiveLock);
+		}
+		else if (mightEvalPlanQual(plan))
+		{
+			acquireVirtualUpdateLock(relid,
+									 ExclusiveLock);
+		}
+		else if(isNaiveModifyTable(plan))
+		{
+			acquireVirtualUpdateLock(relid,
+									 RowExclusiveLock);
+		}
 	}
 }

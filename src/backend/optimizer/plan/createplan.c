@@ -6292,6 +6292,7 @@ make_modifytable(PlannerInfo *root,
 	node->action_col_idxes = NIL;
 	node->ctid_col_idxes = NIL;
 	node->oid_col_idxes = NIL;
+	node->isSplitUpdate = false;
 
 	adjust_modifytable_flow(root, node, is_split_updates);
 
@@ -6586,6 +6587,7 @@ adjust_modifytable_flow(PlannerInfo *root, ModifyTable *node, List *is_split_upd
 					}
 
 					new_subplan = (Plan *) make_splitupdate(root, (ModifyTable *) node, subplan, rte, !qry->needReshuffle);
+					node->isSplitUpdate = true;
 
 					/*
 					 * if need reshuffle, add the Reshuffle node onto the

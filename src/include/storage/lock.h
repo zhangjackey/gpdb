@@ -203,7 +203,8 @@ typedef enum LockTagType
 	 */
 	LOCKTAG_RESOURCE_QUEUE,		/* ID info for resource queue is QUEUE ID */
 	LOCKTAG_USERLOCK,			/* reserved for old contrib/userlock code */
-	LOCKTAG_ADVISORY			/* advisory user locks */
+	LOCKTAG_ADVISORY,			/* advisory user locks */
+	LOCKTAG_VIRTUAL_UPDATE
 } LockTagType;
 
 #define LOCKTAG_LAST_TYPE	LOCKTAG_ADVISORY
@@ -311,6 +312,13 @@ typedef struct LOCKTAG
 	 (locktag).locktag_type = LOCKTAG_RESOURCE_QUEUE,		\
 	 (locktag).locktag_lockmethodid = RESOURCE_LOCKMETHOD)
 
+#define SET_LOCKTAG_VIRTUAL_UPDATE(locktag, reloid) \
+	((locktag).locktag_field1 = (reloid), \
+	 (locktag).locktag_field2 = 0, \
+	 (locktag).locktag_field3 = 0, \
+	 (locktag).locktag_field4 = 0, \
+	 (locktag).locktag_type = LOCKTAG_VIRTUAL_UPDATE,		\
+	 (locktag).locktag_lockmethodid = USER_LOCKMETHOD)
 /*
  * Per-locked-object lock information:
  *
