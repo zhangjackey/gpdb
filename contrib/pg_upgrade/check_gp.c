@@ -78,9 +78,9 @@ check_online_expansion(void)
 		conn = connectToServer(&old_cluster, active_db->db_name);
 		res = executeQueryOrDie(conn,
 								"SELECT true AS expansion "
-								"FROM gp_distribution_policy d "
+								"FROM pg_catalog.gp_distribution_policy d "
 								"JOIN (SELECT count(*) segcount "
-								"      FROM gp_segment_configuration "
+								"      FROM pg_catalog.gp_segment_configuration "
 								"      WHERE content >= 0 and role = 'p') s "
 								"ON d.numsegments <> s.segcount "
 								"LIMIT 1;");
