@@ -1527,7 +1527,7 @@ getgpsegmentCount(void)
 	 */
 	else if (Gp_role == GP_ROLE_UTILITY &&
 			 IsBinaryUpgrade &&
-			 GpIdentity.segindex == -1)
+			 IS_QUERY_DISPATCHER())
 	{
 		numsegments = cdbcomponent_getCdbComponents(true)->total_segments;
 	}
