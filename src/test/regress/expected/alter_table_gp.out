@@ -130,50 +130,10 @@ NOTICE:  table "test_part_col" does not exist, skipping
 CREATE TABLE test_part_col(a int, b int, c int, d int, e int)
 DISTRIBUTED BY(a)
 PARTITION BY RANGE (b)
-    SUBPARTITION BY RANGE (c)
-        SUBPARTITION TEMPLATE (
-            START(1) END (3) EVERY(1),
-            DEFAULT SUBPARTITION others_c)
-    SUBPARTITION BY LIST (d)
-        SUBPARTITION TEMPLATE (
-            SUBPARTITION one VALUES (1),
-            SUBPARTITION two VALUES (2),
-            SUBPARTITION three VALUES (3),
-            DEFAULT SUBPARTITION others_d)
 ( START (1) END (2) EVERY (1),
     DEFAULT PARTITION other_b);
 NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_other_b" for table "test_part_col"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_other_b_2_prt_others_c" for table "test_part_col_1_prt_other_b"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_other_b_2_prt_others_c_3_prt_one" for table "test_part_col_1_prt_other_b_2_prt_others_c"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_other_b_2_prt_others_c_3_prt_two" for table "test_part_col_1_prt_other_b_2_prt_others_c"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_other_b_2_prt_others_c_3_prt_three" for table "test_part_col_1_prt_other_b_2_prt_others_c"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_other_b_2_prt_others_c_3_prt_others_d" for table "test_part_col_1_prt_other_b_2_prt_others_c"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_other_b_2_prt_2" for table "test_part_col_1_prt_other_b"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_other_b_2_prt_2_3_prt_one" for table "test_part_col_1_prt_other_b_2_prt_2"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_other_b_2_prt_2_3_prt_two" for table "test_part_col_1_prt_other_b_2_prt_2"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_other_b_2_prt_2_3_prt_three" for table "test_part_col_1_prt_other_b_2_prt_2"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_other_b_2_prt_2_3_prt_others_d" for table "test_part_col_1_prt_other_b_2_prt_2"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_other_b_2_prt_3" for table "test_part_col_1_prt_other_b"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_other_b_2_prt_3_3_prt_one" for table "test_part_col_1_prt_other_b_2_prt_3"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_other_b_2_prt_3_3_prt_two" for table "test_part_col_1_prt_other_b_2_prt_3"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_other_b_2_prt_3_3_prt_three" for table "test_part_col_1_prt_other_b_2_prt_3"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_other_b_2_prt_3_3_prt_others_d" for table "test_part_col_1_prt_other_b_2_prt_3"
 NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_2" for table "test_part_col"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_2_2_prt_others_c" for table "test_part_col_1_prt_2"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_2_2_prt_others_c_3_prt_one" for table "test_part_col_1_prt_2_2_prt_others_c"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_2_2_prt_others_c_3_prt_two" for table "test_part_col_1_prt_2_2_prt_others_c"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_2_2_prt_others_c_3_prt_three" for table "test_part_col_1_prt_2_2_prt_others_c"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_2_2_prt_others_c_3_prt_others_d" for table "test_part_col_1_prt_2_2_prt_others_c"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_2_2_prt_2" for table "test_part_col_1_prt_2"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_2_2_prt_2_3_prt_one" for table "test_part_col_1_prt_2_2_prt_2"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_2_2_prt_2_3_prt_two" for table "test_part_col_1_prt_2_2_prt_2"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_2_2_prt_2_3_prt_three" for table "test_part_col_1_prt_2_2_prt_2"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_2_2_prt_2_3_prt_others_d" for table "test_part_col_1_prt_2_2_prt_2"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_2_2_prt_3" for table "test_part_col_1_prt_2"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_2_2_prt_3_3_prt_one" for table "test_part_col_1_prt_2_2_prt_3"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_2_2_prt_3_3_prt_two" for table "test_part_col_1_prt_2_2_prt_3"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_2_2_prt_3_3_prt_three" for table "test_part_col_1_prt_2_2_prt_3"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_2_2_prt_3_3_prt_others_d" for table "test_part_col_1_prt_2_2_prt_3"
 ALTER TABLE ONLY test_part_col ADD COLUMN f int; --error
 ERROR:  can't add a column to "test_part_col"; it is a partitioned table or part thereof
 ALTER TABLE test_part_col ADD COLUMN f int;
@@ -213,50 +173,10 @@ CREATE TABLE test_part_col(a int, b int, c int, d int, e int)
 WITH (appendonly=true)
 DISTRIBUTED BY(a)
 PARTITION BY RANGE (b)
-    SUBPARTITION BY RANGE (c)
-        SUBPARTITION TEMPLATE (
-            START(1) END (3) EVERY(1),
-            DEFAULT SUBPARTITION others_c)
-    SUBPARTITION BY LIST (d)
-        SUBPARTITION TEMPLATE (
-            SUBPARTITION one VALUES (1),
-            SUBPARTITION two VALUES (2),
-            SUBPARTITION three VALUES (3),
-            DEFAULT SUBPARTITION others_d)
 ( START (1) END (2) EVERY (1),
     DEFAULT PARTITION other_b);
 NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_other_b" for table "test_part_col"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_other_b_2_prt_others_c" for table "test_part_col_1_prt_other_b"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_other_b_2_prt_others_c_3_prt_one" for table "test_part_col_1_prt_other_b_2_prt_others_c"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_other_b_2_prt_others_c_3_prt_two" for table "test_part_col_1_prt_other_b_2_prt_others_c"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_other_b_2_prt_others_c_3_prt_three" for table "test_part_col_1_prt_other_b_2_prt_others_c"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_other_b_2_prt_others_c_3_prt_others_d" for table "test_part_col_1_prt_other_b_2_prt_others_c"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_other_b_2_prt_2" for table "test_part_col_1_prt_other_b"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_other_b_2_prt_2_3_prt_one" for table "test_part_col_1_prt_other_b_2_prt_2"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_other_b_2_prt_2_3_prt_two" for table "test_part_col_1_prt_other_b_2_prt_2"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_other_b_2_prt_2_3_prt_three" for table "test_part_col_1_prt_other_b_2_prt_2"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_other_b_2_prt_2_3_prt_others_d" for table "test_part_col_1_prt_other_b_2_prt_2"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_other_b_2_prt_3" for table "test_part_col_1_prt_other_b"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_other_b_2_prt_3_3_prt_one" for table "test_part_col_1_prt_other_b_2_prt_3"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_other_b_2_prt_3_3_prt_two" for table "test_part_col_1_prt_other_b_2_prt_3"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_other_b_2_prt_3_3_prt_three" for table "test_part_col_1_prt_other_b_2_prt_3"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_other_b_2_prt_3_3_prt_others_d" for table "test_part_col_1_prt_other_b_2_prt_3"
 NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_2" for table "test_part_col"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_2_2_prt_others_c" for table "test_part_col_1_prt_2"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_2_2_prt_others_c_3_prt_one" for table "test_part_col_1_prt_2_2_prt_others_c"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_2_2_prt_others_c_3_prt_two" for table "test_part_col_1_prt_2_2_prt_others_c"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_2_2_prt_others_c_3_prt_three" for table "test_part_col_1_prt_2_2_prt_others_c"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_2_2_prt_others_c_3_prt_others_d" for table "test_part_col_1_prt_2_2_prt_others_c"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_2_2_prt_2" for table "test_part_col_1_prt_2"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_2_2_prt_2_3_prt_one" for table "test_part_col_1_prt_2_2_prt_2"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_2_2_prt_2_3_prt_two" for table "test_part_col_1_prt_2_2_prt_2"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_2_2_prt_2_3_prt_three" for table "test_part_col_1_prt_2_2_prt_2"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_2_2_prt_2_3_prt_others_d" for table "test_part_col_1_prt_2_2_prt_2"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_2_2_prt_3" for table "test_part_col_1_prt_2"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_2_2_prt_3_3_prt_one" for table "test_part_col_1_prt_2_2_prt_3"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_2_2_prt_3_3_prt_two" for table "test_part_col_1_prt_2_2_prt_3"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_2_2_prt_3_3_prt_three" for table "test_part_col_1_prt_2_2_prt_3"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_2_2_prt_3_3_prt_others_d" for table "test_part_col_1_prt_2_2_prt_3"
 ALTER TABLE ONLY test_part_col ADD COLUMN f int; --error
 ERROR:  can't add a column to "test_part_col"; it is a partitioned table or part thereof
 ALTER TABLE test_part_col ADD COLUMN f int;
@@ -297,50 +217,10 @@ CREATE TABLE test_part_col(a int, b int, c int, d int, e int)
 WITH (appendonly=true, orientation=column)
 DISTRIBUTED BY(a)
 PARTITION BY RANGE (b)
-    SUBPARTITION BY RANGE (c)
-        SUBPARTITION TEMPLATE (
-            START(1) END (3) EVERY(1),
-            DEFAULT SUBPARTITION others_c)
-    SUBPARTITION BY LIST (d)
-        SUBPARTITION TEMPLATE (
-            SUBPARTITION one VALUES (1),
-            SUBPARTITION two VALUES (2),
-            SUBPARTITION three VALUES (3),
-            DEFAULT SUBPARTITION others_d)
 ( START (1) END (2) EVERY (1),
     DEFAULT PARTITION other_b);
 NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_other_b" for table "test_part_col"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_other_b_2_prt_others_c" for table "test_part_col_1_prt_other_b"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_other_b_2_prt_others_c_3_prt_one" for table "test_part_col_1_prt_other_b_2_prt_others_c"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_other_b_2_prt_others_c_3_prt_two" for table "test_part_col_1_prt_other_b_2_prt_others_c"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_other_b_2_prt_others_c_3_prt_three" for table "test_part_col_1_prt_other_b_2_prt_others_c"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_other_b_2_prt_others_c_3_prt_others_d" for table "test_part_col_1_prt_other_b_2_prt_others_c"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_other_b_2_prt_2" for table "test_part_col_1_prt_other_b"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_other_b_2_prt_2_3_prt_one" for table "test_part_col_1_prt_other_b_2_prt_2"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_other_b_2_prt_2_3_prt_two" for table "test_part_col_1_prt_other_b_2_prt_2"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_other_b_2_prt_2_3_prt_three" for table "test_part_col_1_prt_other_b_2_prt_2"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_other_b_2_prt_2_3_prt_others_d" for table "test_part_col_1_prt_other_b_2_prt_2"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_other_b_2_prt_3" for table "test_part_col_1_prt_other_b"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_other_b_2_prt_3_3_prt_one" for table "test_part_col_1_prt_other_b_2_prt_3"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_other_b_2_prt_3_3_prt_two" for table "test_part_col_1_prt_other_b_2_prt_3"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_other_b_2_prt_3_3_prt_three" for table "test_part_col_1_prt_other_b_2_prt_3"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_other_b_2_prt_3_3_prt_others_d" for table "test_part_col_1_prt_other_b_2_prt_3"
 NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_2" for table "test_part_col"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_2_2_prt_others_c" for table "test_part_col_1_prt_2"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_2_2_prt_others_c_3_prt_one" for table "test_part_col_1_prt_2_2_prt_others_c"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_2_2_prt_others_c_3_prt_two" for table "test_part_col_1_prt_2_2_prt_others_c"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_2_2_prt_others_c_3_prt_three" for table "test_part_col_1_prt_2_2_prt_others_c"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_2_2_prt_others_c_3_prt_others_d" for table "test_part_col_1_prt_2_2_prt_others_c"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_2_2_prt_2" for table "test_part_col_1_prt_2"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_2_2_prt_2_3_prt_one" for table "test_part_col_1_prt_2_2_prt_2"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_2_2_prt_2_3_prt_two" for table "test_part_col_1_prt_2_2_prt_2"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_2_2_prt_2_3_prt_three" for table "test_part_col_1_prt_2_2_prt_2"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_2_2_prt_2_3_prt_others_d" for table "test_part_col_1_prt_2_2_prt_2"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_2_2_prt_3" for table "test_part_col_1_prt_2"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_2_2_prt_3_3_prt_one" for table "test_part_col_1_prt_2_2_prt_3"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_2_2_prt_3_3_prt_two" for table "test_part_col_1_prt_2_2_prt_3"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_2_2_prt_3_3_prt_three" for table "test_part_col_1_prt_2_2_prt_3"
-NOTICE:  CREATE TABLE will create partition "test_part_col_1_prt_2_2_prt_3_3_prt_others_d" for table "test_part_col_1_prt_2_2_prt_3"
 ALTER TABLE ONLY test_part_col ADD COLUMN f int; --error
 ERROR:  can't add a column to "test_part_col"; it is a partitioned table or part thereof
 ALTER TABLE test_part_col ADD COLUMN f int;

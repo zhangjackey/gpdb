@@ -90,18 +90,6 @@ DROP TABLE IF EXISTS test_part_col;
 CREATE TABLE test_part_col(a int, b int, c int, d int, e int)
 DISTRIBUTED BY(a)
 PARTITION BY RANGE (b)
-    SUBPARTITION BY RANGE (c)
-        SUBPARTITION TEMPLATE (
-            START(1) END (3) EVERY(1),
-            DEFAULT SUBPARTITION others_c)
-
-    SUBPARTITION BY LIST (d)
-        SUBPARTITION TEMPLATE (
-            SUBPARTITION one VALUES (1),
-            SUBPARTITION two VALUES (2),
-            SUBPARTITION three VALUES (3),
-            DEFAULT SUBPARTITION others_d)
-
 ( START (1) END (2) EVERY (1),
     DEFAULT PARTITION other_b);
 
@@ -143,18 +131,6 @@ CREATE TABLE test_part_col(a int, b int, c int, d int, e int)
 WITH (appendonly=true)
 DISTRIBUTED BY(a)
 PARTITION BY RANGE (b)
-    SUBPARTITION BY RANGE (c)
-        SUBPARTITION TEMPLATE (
-            START(1) END (3) EVERY(1),
-            DEFAULT SUBPARTITION others_c)
-
-    SUBPARTITION BY LIST (d)
-        SUBPARTITION TEMPLATE (
-            SUBPARTITION one VALUES (1),
-            SUBPARTITION two VALUES (2),
-            SUBPARTITION three VALUES (3),
-            DEFAULT SUBPARTITION others_d)
-
 ( START (1) END (2) EVERY (1),
     DEFAULT PARTITION other_b);
 
@@ -197,18 +173,6 @@ CREATE TABLE test_part_col(a int, b int, c int, d int, e int)
 WITH (appendonly=true, orientation=column)
 DISTRIBUTED BY(a)
 PARTITION BY RANGE (b)
-    SUBPARTITION BY RANGE (c)
-        SUBPARTITION TEMPLATE (
-            START(1) END (3) EVERY(1),
-            DEFAULT SUBPARTITION others_c)
-
-    SUBPARTITION BY LIST (d)
-        SUBPARTITION TEMPLATE (
-            SUBPARTITION one VALUES (1),
-            SUBPARTITION two VALUES (2),
-            SUBPARTITION three VALUES (3),
-            DEFAULT SUBPARTITION others_d)
-
 ( START (1) END (2) EVERY (1),
     DEFAULT PARTITION other_b);
 
