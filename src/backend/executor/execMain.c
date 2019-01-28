@@ -3432,6 +3432,26 @@ EvalPlanQual(EState *estate, EPQState *epqstate,
 	Assert(rti > 0);
 
 	/*
+	 * If GDD is enable, the lock of table may downgrade to RowExclusiveLock,
+	 * (see CdbTryOpenRelation function), then EPQ would be triggered, but
+	 * if there is Motion node in the subplan, we can not execute SubPlan
+	 * correctly by EPQ. In this case, we raise an error.
+	 */
+	if (gp_enable_global_deadlock_detector)
+	{
+		Plan *subPlan = epqstate->plan;
+
+		Assert(subPlan != NULL);
+
+		if (subPlan->nMotionNodes > 0)
+		{
+			ereport(ERROR,
+					(errcode(ERRCODE_IN_FAILED_SQL_TRANSACTION),
+					 errmsg("EvalPlanQual can not handle subPlan with Motion node")));
+		}
+	}
+
+	/*
 	 * Get and lock the updated version of the row; if fail, return NULL.
 	 */
 	copyTuple = EvalPlanQualFetch(estate, relation, lockmode, false /* wait */,
