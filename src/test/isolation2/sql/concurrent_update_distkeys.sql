@@ -1,13 +1,13 @@
 -- IF we enable the GDD, then the lock maybe downgrade to
--- RowExclusiveLock, when we UPDATE the distibuted keys,
+-- RowExclusiveLock, when we UPDATE the distribution keys,
 -- A SplitUpdate node will add to the Plan, then an UPDATE
 -- operator may split to DELETE and INSERT.
--- IF we UPDATE the distributed keys concurrently, the
+-- IF we UPDATE the distribution keys concurrently, the
 -- DELETE operator will not execute EvalPlanQual and the
 -- INSERT operator can not be *blocked*, so it will
 -- generate more tuples in the tables.
 -- We raise an error when the GDD is enabled and the
--- distributed keys is updated.
+-- distribution keys is updated.
 
 -- create heap table
 0: show gp_enable_global_deadlock_detector;
