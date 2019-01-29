@@ -31,6 +31,11 @@ INSERT 1
  1  | 1  
 (1 row)
 
+1: set optimizer = off;
+SET
+2: set optimizer = off;
+SET
+
 -- test for heap table
 1: begin;
 BEGIN
@@ -135,6 +140,11 @@ INSERT 1
 ----+----
  1  | 1  
 (1 row)
+
+1: set optimizer = off;
+SET
+2: set optimizer = off;
+SET
 
 -- test for heap table
 1: begin;

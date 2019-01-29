@@ -15,6 +15,9 @@
 0: select * from tab_update_epq1;
 0: select * from tab_update_epq2;
 
+1: set optimizer = off;
+2: set optimizer = off;
+
 -- test for heap table
 1: begin;
 2: begin;
@@ -66,6 +69,9 @@
 0: insert into tab_update_epq2 values(1,1);
 0: select * from tab_update_epq1;
 0: select * from tab_update_epq2;
+
+1: set optimizer = off;
+2: set optimizer = off;
 
 -- test for heap table
 1: begin;
