@@ -73,6 +73,8 @@ typedef struct ApplyMotionState
 	int			sliceDepth;
 	bool		containMotionNodes;
 	List	   *initPlans;
+	List	   *resultRelationOids;
+	int			resultRelationDepth;
 } ApplyMotionState;
 
 typedef struct
@@ -370,6 +372,8 @@ apply_motion(PlannerInfo *root, Plan *plan, Query *query)
 	state.sliceDepth = 0;
 	state.containMotionNodes = false;
 	state.initPlans = NIL;
+	state.resultRelationOids = NIL;
+	state.resultRelationDepth = 0;
 
 	Assert(is_plan_node((Node *) plan) && IsA(query, Query));
 
@@ -563,6 +567,8 @@ apply_motion(PlannerInfo *root, Plan *plan, Query *query)
 			{
 				bringResultToDispatcher = true;
 			}
+
+			state.resultRelationOids = root->glob->resultRelations;
 			break;
 
 		case CMD_UTILITY:
@@ -730,6 +736,17 @@ apply_motion_mutator(Node *node, ApplyMotionState *context)
 		}
 	}
 
+	if (context->resultRelationOids &&
+			(IsA(plan, SeqScan) ||
+			 IsA(plan, IndexScan) ||
+			 IsA(plan, BitmapHeapScan) ||
+			 IsA(plan, BitmapIndexScan)))
+	{
+		Scan *scan = (Scan*)plan;
+		if(list_member_int(context->resultRelationOids, scan->scanrelid))
+			context->resultRelationDepth = saveSliceDepth;
+	}
+
 	/* Pre-existing Motion nodes must be renumbered. */
 	if (IsA(newnode, Motion) &&flow->req_move != MOVEMENT_NONE)
 	{
@@ -817,7 +834,22 @@ apply_motion_mutator(Node *node, ApplyMotionState *context)
 			 * add an ExplicitRedistribute motion node only if child plan
 			 * nodes have a motion node
 			 */
-			if (context->containMotionNodes || IsA(plan, Reshuffle))
+			if (context->containMotionNodes)
+			{
+				if (context->resultRelationDepth == 1)
+				{
+					flow->req_move = MOVEMENT_NONE;
+					flow->flow_before_req_move = NULL;
+				}
+				else
+				{
+					newnode = (Node *) make_explicit_motion(plan,
+															flow->segidColIdx,
+															true	/* useExecutorVarFormat */
+					);
+				}
+			}
+			else if (IsA(plan, Reshuffle))
 			{
 				/*
 				 * motion node in child nodes: add a ExplicitRedistribute
@@ -837,6 +869,8 @@ apply_motion_mutator(Node *node, ApplyMotionState *context)
 				flow->req_move = MOVEMENT_NONE;
 				flow->flow_before_req_move = NULL;
 			}
+
+			context->resultRelationDepth = 0;
 
 			break;
 
