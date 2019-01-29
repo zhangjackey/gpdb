@@ -2,6 +2,7 @@
 ! gpconfig -c gp_enable_global_deadlock_detector -v on;
 ! gpstop -rai;
 -- end_ignore
+
 -- t0r is the reference table to provide the data distribution info.
 DROP TABLE IF EXISTS t0p;
 CREATE TABLE t0p (id int, val int);

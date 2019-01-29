@@ -3028,7 +3028,7 @@ struct config_bool ConfigureNamesBool_gp[] =
 
 	{
 		{"gp_enable_global_deadlock_detector", PGC_POSTMASTER, CUSTOM_OPTIONS,
-			gettext_noop("Check if the Global Deadlock Detector is enabled."),
+			gettext_noop("Enables the Global Deadlock Detector."),
 			NULL
 		},
 		&gp_enable_global_deadlock_detector,
