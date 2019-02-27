@@ -707,7 +707,7 @@ DROP TABLE bm_test_update;
 -- If the table is AO table, it need generate some fake tuple pointer,
 -- this pointer is a little different from the heap tables pointer,
 -- If the Offset in pointer is 0(If the row number is 32768, the Offset
--- should be 0), we set the 16th bit of the Offsert to be 1, so we 
+-- should be 0), we set the 16th bit of the Offsert to be 1, so we
 -- do not forget to remove the flag when we use it, otherwise we will
 -- get an wrong value.
 CREATE TABLE bm_test_reindex(c1 int ) WITH (appendonly=true);
