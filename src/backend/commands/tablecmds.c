@@ -14819,7 +14819,7 @@ ATExecExpandTable(List **wqueue, Relation rel, AlterTableCmd *cmd)
 	}
 	else
 	{
-		ATExecExpandTableCTAS(rootCmd, rel, cmd, ps);
+		ATExecExpandTableCTAS(rootCmd, rel, cmd);
 	}
 
 	/* Update numsegments to cluster size */
